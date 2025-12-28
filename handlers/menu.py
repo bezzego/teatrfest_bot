@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from database import Database
 from config import Config
 from keyboards import get_main_menu_keyboard
+from services.bot_settings import get_bot_settings_service
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -17,6 +18,10 @@ async def buy_tickets_handler(message: Message, config: Config):
     user_id = message.from_user.id
     logger.info(f"Пользователь {user_id} запросил покупку билетов")
     
+    # Получаем ссылку из настроек
+    settings_service = get_bot_settings_service()
+    ticket_url = settings_service.get_ticket_url()
+    
     text = (
         "🎟 Купить билеты\n\n"
         "Перейдите по ссылке для покупки билетов:"
@@ -24,7 +29,7 @@ async def buy_tickets_handler(message: Message, config: Config):
     
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎫 Перейти к покупке билетов", url=config.ticket_url)]
+        [InlineKeyboardButton(text="🎫 Перейти к покупке билетов", url=ticket_url)]
     ])
     
     await message.answer(text, reply_markup=keyboard)
@@ -41,7 +46,7 @@ async def my_promo_code_handler(message: Message, db: Database, config: Config):
     if not user:
         await message.answer(
             "Вы ещё не заполнили райдер. Пожалуйста, начните с команды /start",
-            reply_markup=get_main_menu_keyboard()
+            reply_markup=get_main_menu_keyboard(user_id, config)
         )
         return
     
@@ -50,7 +55,7 @@ async def my_promo_code_handler(message: Message, db: Database, config: Config):
     if not promo_code:
         await message.answer(
             "У вас ещё нет промокода. Заполните райдер, чтобы получить персональную скидку!",
-            reply_markup=get_main_menu_keyboard()
+            reply_markup=get_main_menu_keyboard(user_id, config)
         )
         return
     
@@ -65,8 +70,12 @@ async def my_promo_code_handler(message: Message, db: Database, config: Config):
         f"Примените его при покупке билетов, чтобы получить скидку."
     )
     
+    # Получаем ссылку из настроек
+    settings_service = get_bot_settings_service()
+    ticket_url = settings_service.get_ticket_url()
+    
     from keyboards.inline import get_promo_keyboard
-    await message.answer(text, reply_markup=get_promo_keyboard(config.ticket_url), parse_mode="HTML")
+    await message.answer(text, reply_markup=get_promo_keyboard(ticket_url), parse_mode="HTML")
 
 
 @router.message(F.text == "🌐 Расписание спектаклей")
@@ -112,25 +121,13 @@ async def faq_handler(message: Message):
     user_id = message.from_user.id
     logger.info(f"Пользователь {user_id} запросил частые вопросы")
     
-    text = (
-        "🤔 Частые вопросы зрителей\n\n"
-        "❓ <b>Как получить промокод?</b>\n"
-        "Заполните персональный зрительский райдер через команду /start, и вы получите персональную скидку.\n\n"
-        
-        "❓ <b>Можно ли использовать промокод несколько раз?</b>\n"
-        "Каждый промокод действителен для одного использования при покупке билетов.\n\n"
-        
-        "❓ <b>На все спектакли действует скидка?</b>\n"
-        "Промокод действует на спектакль, указанный при заполнении райдера.\n\n"
-        
-        "❓ <b>Что делать, если промокод не применился?</b>\n"
-        "Обратитесь в нашу службу поддержки - мы обязательно поможем!\n\n"
-        
-        "❓ <b>Можно ли вернуть или обменять билеты?</b>\n"
-        "Возврат и обмен билетов возможен в соответствии с правилами, указанными на сайте при покупке.\n\n"
-        
-        "Если у вас остались вопросы, свяжитесь с нами через раздел «☎️ Контакты и ссылки»."
-    )
+    # Получаем текст FAQ из настроек
+    settings_service = get_bot_settings_service()
+    text = settings_service.get_faq_text()
+    
+    if not text:
+        # Fallback на дефолтный текст, если настройки не заданы
+        text = "🤔 Частые вопросы зрителей\n\nРаздел в разработке."
     
     await message.answer(text, parse_mode="HTML")
 
@@ -141,19 +138,25 @@ async def contacts_handler(message: Message, config: Config):
     user_id = message.from_user.id
     logger.info(f"Пользователь {user_id} запросил контакты")
     
-    text = (
-        "☎️ Контакты и ссылки\n\n"
-        f"📞 <b>Горячая линия:</b>\n"
-        f"Телефон: {config.hotline_phone}\n"
-        f"Email: {config.hotline_email}\n"
-        f"Режим работы: ежедневно с 10:00 до 22:00\n\n"
-        
-        "🌐 <b>Наш сайт:</b>\n"
-        "love-teatrfest.ru\n\n"
-        
-        "📱 <b>Мы в социальных сетях:</b>\n"
-        "Следите за новостями и анонсами спектаклей в наших социальных сетях."
-    )
+    # Получаем текст контактов из настроек
+    settings_service = get_bot_settings_service()
+    text = settings_service.get_contacts_text()
+    
+    if not text:
+        # Fallback на дефолтный текст, если настройки не заданы
+        text = (
+            "☎️ Контакты и ссылки\n\n"
+            f"📞 <b>Горячая линия:</b>\n"
+            f"Телефон: {config.hotline_phone}\n"
+            f"Email: {config.hotline_email}\n"
+            f"Режим работы: ежедневно с 10:00 до 22:00\n\n"
+            
+            "🌐 <b>Наш сайт:</b>\n"
+            "love-teatrfest.ru\n\n"
+            
+            "📱 <b>Мы в социальных сетях:</b>\n"
+            "Следите за новостями и анонсами спектаклей в наших социальных сетях."
+        )
     
     # Можно добавить кнопки с ссылками на соц. сети, если они есть в конфиге
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -164,12 +167,26 @@ async def contacts_handler(message: Message, config: Config):
         InlineKeyboardButton(text="🌐 Наш сайт", url="https://love-teatrfest.ru")
     ])
     
-    # Если в конфиге будут ссылки на соц. сети, можно добавить их здесь
-    # Например:
-    # if config.social_telegram:
-    #     keyboard_buttons.append([InlineKeyboardButton(text="Telegram", url=config.social_telegram)])
-    
     keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
     
     await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
+
+
+@router.message(F.text == "⚙️ Админ-меню")
+async def admin_menu_handler(message: Message, config: Config):
+    """Обработчик кнопки 'Админ-меню'"""
+    from utils.admin import is_admin
+    from keyboards.admin import get_admin_menu_keyboard
+    
+    user_id = message.from_user.id
+    
+    if not is_admin(user_id, config):
+        await message.answer("❌ У вас нет доступа к админ-панели.")
+        return
+    
+    text = (
+        "🔐 Админ-панель\n\n"
+        "Выберите действие:"
+    )
+    await message.answer(text, reply_markup=get_admin_menu_keyboard())
 

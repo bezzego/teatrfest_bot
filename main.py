@@ -59,7 +59,6 @@ async def main():
     from aiogram.types import BotCommand
     await bot.set_my_commands([
         BotCommand(command="start", description="Начать работу с ботом"),
-        BotCommand(command="admin", description="Админ-панель (только для администраторов)"),
     ])
     logger.debug("Команды бота установлены")
     

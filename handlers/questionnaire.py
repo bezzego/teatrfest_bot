@@ -326,7 +326,7 @@ async def email_confirm_yes(callback: CallbackQuery, state: FSMContext, db: Data
     
     # Показываем основное меню
     from keyboards import get_main_menu_keyboard
-    await callback.message.answer("Используйте меню ниже для навигации:", reply_markup=get_main_menu_keyboard())
+    await callback.message.answer("Используйте меню ниже для навигации:", reply_markup=get_main_menu_keyboard(user_id, config))
 
 
 @router.callback_query(F.data == "email_confirm_no", StateFilter(QuestionnaireStates.waiting_for_email_confirm))

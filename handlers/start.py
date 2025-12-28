@@ -4,6 +4,7 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 
 from database import Database
+from config import Config
 from utils import decode_deep_link
 from states import QuestionnaireStates
 from keyboards import get_start_keyboard, get_consent_keyboard, get_main_menu_keyboard
@@ -17,7 +18,7 @@ router = Router()
 _processed_start_messages = set()
 
 @router.message(CommandStart())
-async def cmd_start(message: Message, state: FSMContext, db: Database):
+async def cmd_start(message: Message, state: FSMContext, db: Database, config: Config):
     """Обработчик команды /start с поддержкой глубоких ссылок"""
     user_id = message.from_user.id
     username = message.from_user.username
@@ -145,8 +146,8 @@ async def cmd_start(message: Message, state: FSMContext, db: Database):
     
     # Отправляем приветствие с inline клавиатурой для начала анкеты
     await message.answer(welcome_text, reply_markup=get_start_keyboard())
-    # Устанавливаем основное меню отдельным сообщением
-    await message.answer("Используйте меню ниже для навигации:", reply_markup=get_main_menu_keyboard())
+    # Устанавливаем основное меню отдельным сообщением (с проверкой админа)
+    await message.answer("Используйте меню ниже для навигации:", reply_markup=get_main_menu_keyboard(user_id, config))
 
 
 @router.callback_query(F.data == "start_questionnaire")

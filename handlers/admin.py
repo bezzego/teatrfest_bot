@@ -8,11 +8,14 @@ from aiogram.fsm.state import State, StatesGroup
 from database import Database
 from config import Config
 from utils.admin import is_admin
+from services.bot_settings import get_bot_settings_service
 from keyboards.admin import (
     get_admin_menu_keyboard,
     get_mapping_list_keyboard,
     get_mapping_actions_keyboard,
-    get_confirm_delete_keyboard
+    get_confirm_delete_keyboard,
+    get_settings_menu_keyboard,
+    get_back_to_settings_keyboard
 )
 from logger import get_logger
 
@@ -27,6 +30,10 @@ class AdminStates(StatesGroup):
     waiting_for_datetime = State()
     waiting_for_ticket_url = State()
     editing_slug = State()
+    # Состояния для редактирования настроек
+    editing_ticket_url = State()
+    editing_faq_text = State()
+    editing_contacts_text = State()
 
 
 @router.message(Command("admin"))
@@ -360,9 +367,177 @@ async def process_ticket_url(message: Message, state: FSMContext, db: Database, 
         await message.answer(f"❌ Ошибка при сохранении маппинга: {e}")
 
 
+@router.callback_query(F.data == "admin_back_to_menu")
+async def back_to_menu_callback(callback: CallbackQuery, config: Config):
+    """Возврат в обычное меню"""
+    from keyboards import get_main_menu_keyboard
+    user_id = callback.from_user.id
+    # edit_text не поддерживает ReplyKeyboardMarkup, используем answer
+    await callback.message.answer("Используйте меню ниже для навигации:", reply_markup=get_main_menu_keyboard(user_id, config))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_settings")
+async def settings_menu_callback(callback: CallbackQuery, config: Config):
+    """Меню настроек бота"""
+    user_id = callback.from_user.id
+
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+
+    text = "⚙️ Настройки бота\n\nВыберите, что хотите изменить:"
+    await callback.message.edit_text(text, reply_markup=get_settings_menu_keyboard())
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_edit_ticket_url")
+async def edit_ticket_url_start(callback: CallbackQuery, state: FSMContext, config: Config):
+    """Начало редактирования ссылки на покупку билетов"""
+    user_id = callback.from_user.id
+
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+
+    settings_service = get_bot_settings_service()
+    current_url = settings_service.get_ticket_url()
+
+    await state.set_state(AdminStates.editing_ticket_url)
+    text = (
+        f"🔗 Редактирование ссылки на покупку билетов\n\n"
+        f"Текущая ссылка: <code>{current_url}</code>\n\n"
+        f"Введите новую ссылку:"
+    )
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=get_back_to_settings_keyboard())
+    await callback.answer()
+
+
+@router.message(AdminStates.editing_ticket_url)
+async def process_new_ticket_url(message: Message, state: FSMContext, config: Config):
+    """Обработка новой ссылки на покупку билетов"""
+    user_id = message.from_user.id
+
+    if not is_admin(user_id, config):
+        await message.answer("❌ У вас нет доступа к админ-панели.")
+        return
+
+    new_url = message.text.strip()
+    settings_service = get_bot_settings_service()
+
+    try:
+        settings_service.update_setting('ticket_url', new_url)
+        logger.info(f"Администратор {user_id} обновил ссылку на билеты: {new_url}")
+        await message.answer(
+            f"✅ Ссылка на покупку билетов успешно обновлена на: <code>{new_url}</code>",
+            parse_mode="HTML",
+            reply_markup=get_settings_menu_keyboard()
+        )
+        await state.clear()
+    except Exception as e:
+        logger.error(f"Ошибка при обновлении ссылки на билеты: {e}")
+        await message.answer(f"❌ Ошибка при обновлении ссылки: {e}", reply_markup=get_back_to_settings_keyboard())
+
+
+@router.callback_query(F.data == "admin_edit_faq_text")
+async def edit_faq_text_start(callback: CallbackQuery, state: FSMContext, config: Config):
+    """Начало редактирования текста 'Частые вопросы'"""
+    user_id = callback.from_user.id
+
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+
+    settings_service = get_bot_settings_service()
+    current_text = settings_service.get_faq_text()
+
+    await state.set_state(AdminStates.editing_faq_text)
+    text = (
+        f"❓ Редактирование текста 'Частые вопросы'\n\n"
+        f"Текущий текст:\n<code>{current_text or 'Не задан'}</code>\n\n"
+        f"Введите новый текст (поддерживается HTML-разметка):"
+    )
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=get_back_to_settings_keyboard())
+    await callback.answer()
+
+
+@router.message(AdminStates.editing_faq_text)
+async def process_new_faq_text(message: Message, state: FSMContext, config: Config):
+    """Обработка нового текста 'Частые вопросы'"""
+    user_id = message.from_user.id
+
+    if not is_admin(user_id, config):
+        await message.answer("❌ У вас нет доступа к админ-панели.")
+        return
+
+    new_text = message.text.strip()
+    settings_service = get_bot_settings_service()
+
+    try:
+        settings_service.update_setting('faq_text', new_text)
+        logger.info(f"Администратор {user_id} обновил текст FAQ")
+        await message.answer(
+            f"✅ Текст 'Частые вопросы' успешно обновлен.",
+            parse_mode="HTML",
+            reply_markup=get_settings_menu_keyboard()
+        )
+        await state.clear()
+    except Exception as e:
+        logger.error(f"Ошибка при обновлении текста FAQ: {e}")
+        await message.answer(f"❌ Ошибка при обновлении текста: {e}", reply_markup=get_back_to_settings_keyboard())
+
+
+@router.callback_query(F.data == "admin_edit_contacts_text")
+async def edit_contacts_text_start(callback: CallbackQuery, state: FSMContext, config: Config):
+    """Начало редактирования текста 'Контакты и ссылки'"""
+    user_id = callback.from_user.id
+
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+
+    settings_service = get_bot_settings_service()
+    current_text = settings_service.get_contacts_text()
+
+    await state.set_state(AdminStates.editing_contacts_text)
+    text = (
+        f"☎️ Редактирование текста 'Контакты и ссылки'\n\n"
+        f"Текущий текст:\n<code>{current_text or 'Не задан'}</code>\n\n"
+        f"Введите новый текст (поддерживается HTML-разметка):"
+    )
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=get_back_to_settings_keyboard())
+    await callback.answer()
+
+
+@router.message(AdminStates.editing_contacts_text)
+async def process_new_contacts_text(message: Message, state: FSMContext, config: Config):
+    """Обработка нового текста 'Контакты и ссылки'"""
+    user_id = message.from_user.id
+
+    if not is_admin(user_id, config):
+        await message.answer("❌ У вас нет доступа к админ-панели.")
+        return
+
+    new_text = message.text.strip()
+    settings_service = get_bot_settings_service()
+
+    try:
+        settings_service.update_setting('contacts_text', new_text)
+        logger.info(f"Администратор {user_id} обновил текст контактов")
+        await message.answer(
+            f"✅ Текст 'Контакты и ссылки' успешно обновлен.",
+            parse_mode="HTML",
+            reply_markup=get_settings_menu_keyboard()
+        )
+        await state.clear()
+    except Exception as e:
+        logger.error(f"Ошибка при обновлении текста контактов: {e}")
+        await message.answer(f"❌ Ошибка при обновлении текста: {e}", reply_markup=get_back_to_settings_keyboard())
+
+
 @router.callback_query(F.data.startswith("admin_edit_"))
 async def edit_mapping_callback(callback: CallbackQuery, state: FSMContext, db: Database, config: Config):
-    """Начало редактирования маппинга"""
+    """Начало редактирования маппинга (обрабатывает admin_edit_{slug})"""
     user_id = callback.from_user.id
     
     if not is_admin(user_id, config):
@@ -370,6 +545,11 @@ async def edit_mapping_callback(callback: CallbackQuery, state: FSMContext, db: 
         return
     
     slug = callback.data.replace("admin_edit_", "")
+    
+    # Пропускаем обработку, если это кнопки настроек (они уже обработаны выше)
+    if slug in ["ticket_url", "faq_text", "contacts_text"]:
+        return
+    
     mapping = await db.get_link_mapping(slug)
     
     if not mapping:
@@ -389,14 +569,5 @@ async def edit_mapping_callback(callback: CallbackQuery, state: FSMContext, db: 
         f"Введите новый город (или текущий для сохранения):"
     )
     await callback.message.edit_text(text, parse_mode="HTML")
-    await callback.answer()
-
-
-@router.callback_query(F.data == "admin_back_to_menu")
-async def back_to_menu_callback(callback: CallbackQuery):
-    """Возврат в обычное меню"""
-    from keyboards import get_main_menu_keyboard
-    # edit_text не поддерживает ReplyKeyboardMarkup, используем answer
-    await callback.message.answer("Используйте меню ниже для навигации:", reply_markup=get_main_menu_keyboard())
     await callback.answer()
 

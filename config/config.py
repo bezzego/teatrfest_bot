@@ -18,6 +18,30 @@ class AmoCRMConfig:
     refresh_token: str
 
 
+def _load_admin_ids() -> List[int]:
+    """Загружает ID администраторов из переменной окружения ADMIN_IDS"""
+    admin_ids_str = os.getenv('ADMIN_IDS')
+    
+    if not admin_ids_str:
+        # Дефолтные значения для обратной совместимости
+        default_ids = [764643451, 874844758]
+        logger.warning(
+            "Переменная ADMIN_IDS не задана в .env файле. "
+            f"Используются дефолтные значения: {default_ids}. "
+            "Рекомендуется добавить ADMIN_IDS в .env файл."
+        )
+        return default_ids
+    
+    try:
+        admin_ids = [int(id.strip()) for id in admin_ids_str.split(',') if id.strip()]
+        if not admin_ids:
+            logger.warning("ADMIN_IDS задан, но список пуст. Админ-панель будет недоступна.")
+        return admin_ids
+    except ValueError as e:
+        logger.error(f"Ошибка при парсинге ADMIN_IDS: {e}. Используются дефолтные значения.")
+        return [764643451, 874844758]
+
+
 @dataclass
 class Config:
     bot_token: str
@@ -56,7 +80,7 @@ class Config:
             ticket_url=os.getenv('TICKET_URL', 'https://your-ticket-url.com'),
             hotline_phone=os.getenv('HOTLINE_PHONE', '+7 (XXX) XXX-XX-XX'),
             hotline_email=os.getenv('HOTLINE_EMAIL', 'support@teatrfest.ru'),
-            admin_ids=[int(id.strip()) for id in os.getenv('ADMIN_IDS', '764643451,874844758').split(',') if id.strip()],
+            admin_ids=_load_admin_ids(),
             bot_username=os.getenv('BOT_USERNAME', 'theatrfest_help_bot'),
             link_mappings_path=os.getenv('LINK_MAPPINGS_PATH', './link_mappings.json'),
         )
