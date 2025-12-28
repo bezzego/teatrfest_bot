@@ -6,10 +6,34 @@ from logger import get_logger
 logger = get_logger(__name__)
 
 
-def encode_deep_link(city: str, project: str, show_datetime: str) -> str:
+def encode_deep_link(
+    city: str, 
+    project: str, 
+    show_datetime: str,
+    utm_source: Optional[str] = None,
+    utm_medium: Optional[str] = None,
+    utm_campaign: Optional[str] = None,
+    utm_term: Optional[str] = None,
+    utm_content: Optional[str] = None,
+    yandex_id: Optional[str] = None,
+    roistat_visit: Optional[str] = None
+) -> str:
     """Кодирует параметры для глубокой ссылки"""
-    params = f"{city}|{project}|{show_datetime}"
-    encoded = base64.b64encode(params.encode()).decode()
+    params = {
+        "city": city,
+        "project": project,
+        "show_datetime": show_datetime,
+        "utm_source": utm_source or "",
+        "utm_medium": utm_medium or "",
+        "utm_campaign": utm_campaign or "",
+        "utm_term": utm_term or "",
+        "utm_content": utm_content or "",
+        "yandex_id": yandex_id or "",
+        "roistat_visit": roistat_visit or ""
+    }
+    import json
+    params_json = json.dumps(params)
+    encoded = base64.b64encode(params_json.encode()).decode()
     return encoded
 
 
@@ -17,16 +41,36 @@ def decode_deep_link(encoded: str) -> Optional[Dict[str, str]]:
     """Декодирует параметры из глубокой ссылки"""
     try:
         decoded = base64.b64decode(encoded.encode()).decode()
-        parts = decoded.split("|")
-        if len(parts) == 3:
-            logger.debug(f"Декодирована ссылка: city={parts[0]}, project={parts[1]}, datetime={parts[2]}")
-            return {
-                "city": parts[0],
-                "project": parts[1],
-                "show_datetime": parts[2]
-            }
-        else:
-            logger.warning(f"Неверный формат декодированных данных: ожидалось 3 части, получено {len(parts)}")
+        import json
+        params = json.loads(decoded)
+        
+        # Поддержка старого формата (для обратной совместимости)
+        if isinstance(params, str):
+            parts = params.split("|")
+            if len(parts) == 3:
+                logger.debug(f"Декодирована ссылка (старый формат): city={parts[0]}, project={parts[1]}, datetime={parts[2]}")
+                return {
+                    "city": parts[0],
+                    "project": parts[1],
+                    "show_datetime": parts[2]
+                }
+        
+        logger.debug(f"Декодирована ссылка: {params}")
+        return params
+    except json.JSONDecodeError:
+        # Пробуем старый формат
+        try:
+            decoded = base64.b64decode(encoded.encode()).decode()
+            parts = decoded.split("|")
+            if len(parts) == 3:
+                logger.debug(f"Декодирована ссылка (старый формат): city={parts[0]}, project={parts[1]}, datetime={parts[2]}")
+                return {
+                    "city": parts[0],
+                    "project": parts[1],
+                    "show_datetime": parts[2]
+                }
+        except:
+            pass
     except Exception as e:
         logger.error(f"Ошибка декодирования ссылки: {e}")
     return None

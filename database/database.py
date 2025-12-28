@@ -34,24 +34,29 @@ class Database:
                     scenario TEXT,
                     email_confirmed BOOLEAN DEFAULT 0,
                     promo_issued BOOLEAN DEFAULT 0,
+                    utm_source TEXT,
+                    utm_medium TEXT,
+                    utm_campaign TEXT,
+                    utm_term TEXT,
+                    utm_content TEXT,
+                    yandex_id TEXT,
+                    roistat_visit TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             
             # Добавляем новые поля, если их нет (для существующих БД)
-            try:
-                await db.execute("ALTER TABLE users ADD COLUMN birthday TEXT")
-            except:
-                pass
-            try:
-                await db.execute("ALTER TABLE users ADD COLUMN scenario TEXT")
-            except:
-                pass
-            try:
-                await db.execute("ALTER TABLE users ADD COLUMN email TEXT")
-            except:
-                pass
+            new_fields = [
+                "birthday", "scenario", "email",
+                "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+                "yandex_id", "roistat_visit"
+            ]
+            for field in new_fields:
+                try:
+                    await db.execute(f"ALTER TABLE users ADD COLUMN {field} TEXT")
+                except:
+                    pass
             
             # Таблица жанров пользователя
             await db.execute("""
@@ -72,18 +77,31 @@ class Database:
         username: Optional[str],
         city: str,
         project: str,
-        show_datetime: str
+        show_datetime: str,
+        utm_source: Optional[str] = None,
+        utm_medium: Optional[str] = None,
+        utm_campaign: Optional[str] = None,
+        utm_term: Optional[str] = None,
+        utm_content: Optional[str] = None,
+        yandex_id: Optional[str] = None,
+        roistat_visit: Optional[str] = None
     ):
         """Создает или обновляет пользователя при переходе по ссылке"""
         logger.info(f"Создание/обновление пользователя из ссылки: user_id={user_id}, city={city}, project={project}")
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("""
                 INSERT OR REPLACE INTO users 
-                (user_id, username, city, project, show_datetime, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (user_id, username, city, project, show_datetime, datetime.now().isoformat()))
+                (user_id, username, city, project, show_datetime, 
+                 utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+                 yandex_id, roistat_visit, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                user_id, username, city, project, show_datetime,
+                utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+                yandex_id, roistat_visit, datetime.now().isoformat()
+            ))
             await db.commit()
-            logger.debug(f"Пользователь {user_id} сохранен/обновлен в БД")
+            logger.debug(f"Пользователь {user_id} сохранен/обновлен в БД с рекламными метками")
 
     async def get_user(self, user_id: int) -> Optional[dict]:
         """Получить информацию о пользователе"""

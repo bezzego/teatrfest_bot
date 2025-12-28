@@ -5,12 +5,37 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
+try:
+    import jwt
+    JWT_AVAILABLE = True
+except ImportError:
+    JWT_AVAILABLE = False
+
 
 class AmoCRM:
     def __init__(self, config: AmoCRMConfig):
         self.config = config
+        # Определяем базовый URL для API
+        # Для этого аккаунта работает subdomain.amocrm.ru
+        # (api-b.amocrm.ru из токена не работает для этого аккаунта)
         self.base_url = f"https://{config.subdomain}.amocrm.ru"
-        logger.debug(f"Инициализирован AmoCRM клиент для {config.subdomain}")
+        logger.debug(f"Инициализирован AmoCRM клиент для {config.subdomain}, API: {self.base_url}")
+    
+    def _get_api_domain_from_token(self) -> Optional[str]:
+        """Получить API домен из токена, если указан"""
+        if not JWT_AVAILABLE:
+            return None
+        try:
+            decoded = jwt.decode(
+                self.config.access_token,
+                options={"verify_signature": False}
+            )
+            api_domain = decoded.get('api_domain')
+            if api_domain:
+                return api_domain
+        except Exception:
+            pass
+        return None
 
     async def _get_access_token(self) -> str:
         """Получить актуальный access token (можно расширить логику обновления)"""
@@ -133,9 +158,10 @@ class AmoCRM:
         lead_data = {
             "name": lead_name,
             "price": 0,
+            "pipeline_id": 5283247,  # Воронка "Новые клиенты"
             "custom_fields_values": []
         }
-        logger.debug(f"Название сделки: {lead_name}")
+        logger.debug(f"Название сделки: {lead_name}, Pipeline ID: 5283247")
 
         # Добавляем кастомные поля
         custom_fields = []
@@ -162,6 +188,47 @@ class AmoCRM:
             custom_fields.append({
                 "field_id": 123464,  # ID поля сценария (нужно заменить на реальное)
                 "values": [{"value": user_data['scenario']}]
+            })
+
+        # Добавляем рекламные метки (UTM)
+        if user_data.get('utm_source'):
+            custom_fields.append({
+                "field_id": 123465,  # ID поля UTM Source (нужно заменить на реальное)
+                "values": [{"value": user_data['utm_source']}]
+            })
+        if user_data.get('utm_medium'):
+            custom_fields.append({
+                "field_id": 123466,  # ID поля UTM Medium (нужно заменить на реальное)
+                "values": [{"value": user_data['utm_medium']}]
+            })
+        if user_data.get('utm_campaign'):
+            custom_fields.append({
+                "field_id": 123467,  # ID поля UTM Campaign (нужно заменить на реальное)
+                "values": [{"value": user_data['utm_campaign']}]
+            })
+        if user_data.get('utm_term'):
+            custom_fields.append({
+                "field_id": 123468,  # ID поля UTM Term (нужно заменить на реальное)
+                "values": [{"value": user_data['utm_term']}]
+            })
+        if user_data.get('utm_content'):
+            custom_fields.append({
+                "field_id": 123469,  # ID поля UTM Content (нужно заменить на реальное)
+                "values": [{"value": user_data['utm_content']}]
+            })
+
+        # Добавляем Яндекс ID
+        if user_data.get('yandex_id'):
+            custom_fields.append({
+                "field_id": 123470,  # ID поля Яндекс ID (нужно заменить на реальное)
+                "values": [{"value": user_data['yandex_id']}]
+            })
+
+        # Добавляем визит Ройстат
+        if user_data.get('roistat_visit'):
+            custom_fields.append({
+                "field_id": 123471,  # ID поля Ройстат визит (нужно заменить на реальное)
+                "values": [{"value": user_data['roistat_visit']}]
             })
 
         lead_data["custom_fields_values"] = custom_fields
@@ -208,14 +275,45 @@ async def create_lead_in_city(user_data: Dict, city: str, city1_config: AmoCRMCo
     city_lower = city.lower() if city else ""
     logger.debug(f"Определение AmoCRM аккаунта для города: {city}")
     
-    # По умолчанию используем city1 для москвы и city2 для остальных
-    city1_keywords = ["city1", "москва", "moscow", "msk", "мск"]
+    # Города для первой CRM (АТЛАНТ)
+    city1_cities = [
+        "волгоград", "volgograd",
+        "краснодар", "krasnodar",
+        "ростов-на-дону", "ростов", "rostov", "rostov-on-don",
+        "самара", "samara",
+        "сочи", "sochi",
+        "ставрополь", "stavropol",
+        "уфа", "ufa"
+    ]
     
-    if any(keyword in city_lower for keyword in city1_keywords):
-        logger.info(f"Выбран AmoCRM City1 для города {city}")
+    # Города для второй CRM (ЭТАЖИ)
+    city2_cities = [
+        "воронеж", "voronezh",
+        "екатеринбург", "ekaterinburg", "yekaterinburg",
+        "ижевск", "izhevsk",
+        "казань", "kazan",
+        "красноярск", "krasnoyarsk",
+        "липецк", "lipetsk",
+        "минск", "minsk",
+        "набережные челны", "набережные", "naberezhnye", "chelny",
+        "нижний новгород", "нижний", "nizhny", "novgorod", "nizhny-novgorod",
+        "новосибирск", "novosibirsk",
+        "омск", "omsk",
+        "тамбов", "tambov",
+        "тюмень", "tyumen",
+        "челябинск", "chelyabinsk"
+    ]
+    
+    # Проверяем, относится ли город к первой CRM
+    if any(city_keyword in city_lower for city_keyword in city1_cities):
+        logger.info(f"Выбран AmoCRM City1 (АТЛАНТ) для города {city}")
         amocrm = AmoCRM(city1_config)
+    elif any(city_keyword in city_lower for city_keyword in city2_cities):
+        logger.info(f"Выбран AmoCRM City2 (ЭТАЖИ) для города {city}")
+        amocrm = AmoCRM(city2_config)
     else:
-        logger.info(f"Выбран AmoCRM City2 для города {city}")
+        # Если город не определен, используем City2 по умолчанию
+        logger.warning(f"Город {city} не найден в списках, используется City2 (ЭТАЖИ) по умолчанию")
         amocrm = AmoCRM(city2_config)
     
     # Добавляем telegram данные в user_data

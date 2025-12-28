@@ -289,6 +289,14 @@ async def email_confirm_yes(callback: CallbackQuery, state: FSMContext, db: Data
         'birthday': user.get('birthday'),
         'scenario': user.get('scenario'),
         'gender': user.get('gender'),
+        # Рекламные метки
+        'utm_source': user.get('utm_source'),
+        'utm_medium': user.get('utm_medium'),
+        'utm_campaign': user.get('utm_campaign'),
+        'utm_term': user.get('utm_term'),
+        'utm_content': user.get('utm_content'),
+        'yandex_id': user.get('yandex_id'),
+        'roistat_visit': user.get('roistat_visit'),
     }
     
     logger.info(f"Отправка заявки в AmoCRM для пользователя {user_id}")

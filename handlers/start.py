@@ -31,13 +31,20 @@ async def cmd_start(message: Message, state: FSMContext, db: Database):
         
         if deep_link_params:
             logger.info(f"Обработка глубокой ссылки для пользователя {user_id}")
-            # Сохраняем данные из ссылки в БД
+            # Сохраняем данные из ссылки в БД (включая рекламные метки)
             await db.create_or_update_user_from_link(
                 user_id=user_id,
                 username=username,
-                city=deep_link_params['city'],
-                project=deep_link_params['project'],
-                show_datetime=deep_link_params['show_datetime']
+                city=deep_link_params.get('city', ''),
+                project=deep_link_params.get('project', ''),
+                show_datetime=deep_link_params.get('show_datetime', ''),
+                utm_source=deep_link_params.get('utm_source'),
+                utm_medium=deep_link_params.get('utm_medium'),
+                utm_campaign=deep_link_params.get('utm_campaign'),
+                utm_term=deep_link_params.get('utm_term'),
+                utm_content=deep_link_params.get('utm_content'),
+                yandex_id=deep_link_params.get('yandex_id'),
+                roistat_visit=deep_link_params.get('roistat_visit')
             )
         else:
             logger.warning(f"Не удалось декодировать параметры глубокой ссылки для пользователя {user_id}")
