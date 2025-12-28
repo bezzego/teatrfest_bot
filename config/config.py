@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from dataclasses import dataclass
+from typing import List
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -26,6 +27,9 @@ class Config:
     ticket_url: str
     hotline_phone: str
     hotline_email: str
+    admin_ids: List[int]
+    bot_username: str
+    link_mappings_path: str
     
     @classmethod
     def load(cls) -> 'Config':
@@ -52,7 +56,11 @@ class Config:
             ticket_url=os.getenv('TICKET_URL', 'https://your-ticket-url.com'),
             hotline_phone=os.getenv('HOTLINE_PHONE', '+7 (XXX) XXX-XX-XX'),
             hotline_email=os.getenv('HOTLINE_EMAIL', 'support@teatrfest.ru'),
+            admin_ids=[int(id.strip()) for id in os.getenv('ADMIN_IDS', '764643451,874844758').split(',') if id.strip()],
+            bot_username=os.getenv('BOT_USERNAME', 'theatrfest_help_bot'),
+            link_mappings_path=os.getenv('LINK_MAPPINGS_PATH', './link_mappings.json'),
         )
         logger.debug("Конфигурация успешно загружена")
+        logger.debug(f"Администраторы: {config.admin_ids}")
         return config
 

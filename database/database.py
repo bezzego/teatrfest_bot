@@ -68,6 +68,9 @@ class Database:
                 )
             """)
             
+            # Примечание: маппинги ссылок теперь хранятся в JSON файле (link_mappings.json)
+            # а не в базе данных, чтобы они не терялись при удалении БД
+            
             await db.commit()
             logger.info("Таблицы базы данных созданы/проверены успешно")
 
@@ -177,6 +180,49 @@ class Database:
             )
             await db.commit()
             logger.debug(f"Жанр {genre} удален у пользователя {user_id}")
+    
+    # ========== Методы для работы с маппингом ссылок ==========
+    # Примечание: маппинги теперь хранятся в JSON файле, а не в БД
+    # Эти методы оставлены для обратной совместимости и перенаправляют вызовы в сервис
+    
+    async def get_link_mapping(self, slug: str) -> Optional[dict]:
+        """Получить маппинг ссылки по slug (из JSON файла)"""
+        from services.link_mappings import get_link_mappings_service
+        service = get_link_mappings_service()
+        return service.get_link_mapping(slug)
+    
+    async def create_or_update_link_mapping(
+        self,
+        slug: str,
+        city: str,
+        project: str,
+        show_datetime: str,
+        ticket_url: Optional[str] = None,
+        crm_type: Optional[str] = None
+    ):
+        """Создать или обновить маппинг ссылки (в JSON файле)"""
+        from services.link_mappings import get_link_mappings_service
+        service = get_link_mappings_service()
+        service.create_or_update_link_mapping(
+            slug=slug,
+            city=city,
+            project=project,
+            show_datetime=show_datetime,
+            ticket_url=ticket_url,
+            crm_type=crm_type
+        )
+    
+    async def get_all_link_mappings(self) -> List[dict]:
+        """Получить все маппинги ссылок (из JSON файла)"""
+        from services.link_mappings import get_link_mappings_service
+        service = get_link_mappings_service()
+        return service.get_all_link_mappings()
+    
+    async def delete_link_mapping(self, slug: str):
+        """Удалить маппинг ссылки (из JSON файла)"""
+        from services.link_mappings import get_link_mappings_service
+        service = get_link_mappings_service()
+        service.delete_link_mapping(slug)
 
     async def update_user_promo_code(self, user_id: int, promo_code: str):
         """Обновить промокод пользователя"""

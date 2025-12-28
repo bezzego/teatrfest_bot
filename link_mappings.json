@@ -1,0 +1,191 @@
+{
+  "ufa2": {
+    "city": "Уфа",
+    "project": "Игроки",
+    "show_datetime": "2026-01-16 19:00",
+    "ticket_url": "https://love-teatrfest.ru/ufa2",
+    "crm_type": "city1",
+    "created_at": "2025-12-28T17:15:54.408509",
+    "updated_at": "2025-12-28T17:15:54.408516"
+  },
+  "samara2": {
+    "city": "Самара",
+    "project": "Игроки",
+    "show_datetime": "2026-01-17 19:00",
+    "ticket_url": "https://love-teatrfest.ru/samara2",
+    "crm_type": "city1",
+    "created_at": "2025-12-28T17:15:54.409376",
+    "updated_at": "2025-12-28T17:15:54.409378"
+  },
+  "sochi1": {
+    "city": "Сочи",
+    "project": "Жениться нельзя расстаться",
+    "show_datetime": "2026-01-19 19:00",
+    "ticket_url": "https://love-teatrfest.ru/sochi1",
+    "crm_type": "city1",
+    "created_at": "2025-12-28T17:15:54.409606",
+    "updated_at": "2025-12-28T17:15:54.409607"
+  },
+  "rostov1": {
+    "city": "Ростов-на-Дону",
+    "project": "Жениться нельзя расстаться",
+    "show_datetime": "2026-01-20 19:00",
+    "ticket_url": "https://love-teatrfest.ru/rostov1",
+    "crm_type": "city1",
+    "created_at": "2025-12-28T17:15:54.409833",
+    "updated_at": "2025-12-28T17:15:54.409835"
+  },
+  "kazan3": {
+    "city": "Казань",
+    "project": "Салон красоты, или о чем говорят женщины",
+    "show_datetime": "2026-01-20 19:00",
+    "ticket_url": "https://love-teatrfest.ru/kazan3",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.410063",
+    "updated_at": "2025-12-28T17:15:54.410065"
+  },
+  "krasnodar3": {
+    "city": "Краснодар",
+    "project": "Жениться нельзя расстаться",
+    "show_datetime": "2026-01-21 19:00",
+    "ticket_url": "https://love-teatrfest.ru/krasnodar3",
+    "crm_type": "city1",
+    "created_at": "2025-12-28T17:15:54.410276",
+    "updated_at": "2025-12-28T17:15:54.410278"
+  },
+  "stavropol": {
+    "city": "Ставрополь",
+    "project": "Жениться нельзя расстаться",
+    "show_datetime": "2026-01-22 19:00",
+    "ticket_url": "https://love-teatrfest.ru/stavropol",
+    "crm_type": "city1",
+    "created_at": "2025-12-28T17:15:54.410526",
+    "updated_at": "2025-12-28T17:15:54.410530"
+  },
+  "minsk1": {
+    "city": "Минск",
+    "project": "Салон красоты, или о чем говорят женщины",
+    "show_datetime": "2026-01-23 19:00",
+    "ticket_url": "https://teatrfest.com/minsk1",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.410778",
+    "updated_at": "2025-12-28T17:15:54.410780"
+  },
+  "voronezh3": {
+    "city": "Воронеж",
+    "project": "Салон красоты, или о чем говорят женщины",
+    "show_datetime": "2026-01-25 19:00",
+    "ticket_url": "https://love-teatrfest.ru/voronezh3",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.411089",
+    "updated_at": "2025-12-28T17:15:54.411091"
+  },
+  "krasnoyarsk2": {
+    "city": "Красноярск",
+    "project": "Обед для грешников",
+    "show_datetime": "2026-02-08 19:00",
+    "ticket_url": "https://love-teatrfest.ru/krasnoyarsk2",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.411322",
+    "updated_at": "2025-12-28T17:15:54.411324"
+  },
+  "novosibirsk2": {
+    "city": "Новосибирск",
+    "project": "Обед для грешников",
+    "show_datetime": "2026-02-09 19:00",
+    "ticket_url": "https://love-teatrfest.ru/novosibirsk2",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.411631",
+    "updated_at": "2025-12-28T17:15:54.411633"
+  },
+  "ekb1": {
+    "city": "Екатеринбург",
+    "project": "Мужчина с доставкой на дом",
+    "show_datetime": "2026-02-09 19:00",
+    "ticket_url": "https://love-teatrfest.ru/ekb1",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.411854",
+    "updated_at": "2025-12-28T17:15:54.411855"
+  },
+  "kazan2": {
+    "city": "Казань",
+    "project": "Фальшивая нота",
+    "show_datetime": "2026-02-09 19:00",
+    "ticket_url": "https://love-teatrfest.ru/kazan2",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.412135",
+    "updated_at": "2025-12-28T17:15:54.412137"
+  },
+  "samara1": {
+    "city": "Самара",
+    "project": "Двое на качелях",
+    "show_datetime": "2026-02-13 19:00",
+    "ticket_url": "https://love-teatrfest.ru/samara1",
+    "crm_type": "city1",
+    "created_at": "2025-12-28T17:15:54.412383",
+    "updated_at": "2025-12-28T17:15:54.412385"
+  },
+  "chelyabinsk1": {
+    "city": "Челябинск",
+    "project": "Скамейка",
+    "show_datetime": "2026-02-13 19:00",
+    "ticket_url": "https://love-teatrfest.ru/chelyabinsk1",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.412809",
+    "updated_at": "2025-12-28T17:15:54.412811"
+  },
+  "tyumen1": {
+    "city": "Тюмень",
+    "project": "Салон красоты, или о чем говорят женщины",
+    "show_datetime": "2026-02-15 19:00",
+    "ticket_url": "https://love-teatrfest.ru/tyumen1",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.413284",
+    "updated_at": "2025-12-28T17:15:54.413286"
+  },
+  "omsk1": {
+    "city": "Омск",
+    "project": "Салон красоты, или о чем говорят женщины",
+    "show_datetime": "2026-02-16 19:00",
+    "ticket_url": "https://love-teatrfest.ru/omsk1",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.413572",
+    "updated_at": "2025-12-28T17:15:54.413574"
+  },
+  "nab-chelny1": {
+    "city": "Набережные Челны",
+    "project": "Ночь ее откровений",
+    "show_datetime": "2026-02-16 19:00",
+    "ticket_url": "https://love-teatrfest.ru/nab-chelny1",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.414232",
+    "updated_at": "2025-12-28T17:15:54.414234"
+  },
+  "izhevsk1": {
+    "city": "Ижевск",
+    "project": "Ночь ее откровений",
+    "show_datetime": "2026-02-17 19:00",
+    "ticket_url": "https://love-teatrfest.ru/izhevsk1",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.414608",
+    "updated_at": "2025-12-28T17:15:54.414610"
+  },
+  "voronezh1": {
+    "city": "Воронеж",
+    "project": "Яблоко раздора",
+    "show_datetime": "2026-02-21 19:00",
+    "ticket_url": "https://love-teatrfest.ru/voronezh1",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.414893",
+    "updated_at": "2025-12-28T17:15:54.414895"
+  },
+  "nn1": {
+    "city": "Нижний Новгород",
+    "project": "Фальшивая нота",
+    "show_datetime": "2026-02-25 19:00",
+    "ticket_url": "https://love-teatrfest.ru/nn1",
+    "crm_type": "city2",
+    "created_at": "2025-12-28T17:15:54.415344",
+    "updated_at": "2025-12-28T17:15:54.415346"
+  }
+}

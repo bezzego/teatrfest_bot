@@ -35,8 +35,9 @@ encoded_params = encode_deep_link(
     roistat_visit=roistat_visit
 )
 
-# Формируем ссылку (замените YOUR_BOT_USERNAME на имя вашего бота)
-bot_username = "YOUR_BOT_USERNAME"
+# Формируем ссылку
+# Используем username бота из конфигурации или по умолчанию
+bot_username = "theatrfest_help_bot"  # https://t.me/theatrfest_help_bot
 deep_link = f"https://t.me/{bot_username}?start={encoded_params}"
 
 print(f"Ссылка для посадочной страницы: {deep_link}")

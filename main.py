@@ -5,7 +5,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from config import Config
 from database import Database
 from middleware import DatabaseMiddleware, ConfigMiddleware
-from handlers import start, questionnaire, help, menu
+from handlers import start, questionnaire, help, menu, admin
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -50,6 +50,7 @@ async def main():
     dp.include_router(questionnaire.router)
     dp.include_router(help.router)
     dp.include_router(menu.router)
+    dp.include_router(admin.router)
     logger.info("Роутеры зарегистрированы")
     
     logger.info("Бот запущен и готов к работе")
@@ -58,6 +59,7 @@ async def main():
     from aiogram.types import BotCommand
     await bot.set_my_commands([
         BotCommand(command="start", description="Начать работу с ботом"),
+        BotCommand(command="admin", description="Админ-панель (только для администраторов)"),
     ])
     logger.debug("Команды бота установлены")
     

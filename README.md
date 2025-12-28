@@ -2,6 +2,8 @@
 
 Telegram бот для театрального фестиваля с интеграцией AmoCRM и системой персональных скидок.
 
+**Ссылка на бота:** [@theatrfest_help_bot](https://t.me/theatrfest_help_bot)
+
 ## Возможности
 
 - Глубокие ссылки для автоматического сохранения данных (город, проект, дата/время спектакля)
@@ -56,7 +58,7 @@ AMOCRM_CITY2_REFRESH_TOKEN=your_refresh_token_city2
 DATABASE_PATH=./bot_database.db
 
 # Bot Settings
-BOT_USERNAME=your_bot_username
+BOT_USERNAME=theatrfest_help_bot
 
 # Additional Settings
 TICKET_URL=https://your-ticket-url.com
@@ -93,24 +95,26 @@ HOTLINE_EMAIL=support@teatrfest.ru
 
 Формат ссылки:
 ```
-https://t.me/your_bot_username?start=ENCODED_PARAMS
+https://t.me/theatrfest_help_bot?start=ENCODED_PARAMS
 ```
 
-Где `ENCODED_PARAMS` - это base64-кодированная строка в формате:
-```
-city|project|show_datetime
-```
+Где `ENCODED_PARAMS` - это base64-кодированная строка или slug (хвостик ссылки).
 
 Пример использования в Python:
 ```python
-from utils import encode_deep_link
+from utils.link_generator import generate_bot_link
 
-link = encode_deep_link(
-    city="Москва",
-    project="Дина",
-    show_datetime="2025-12-30 19:00"
+# Простая ссылка со slug (рекомендуется)
+link = generate_bot_link(slug="tyumen1")
+# Результат: https://t.me/theatrfest_help_bot?start=tyumen1
+
+# Deep link с полными параметрами
+link = generate_bot_link(
+    city="Тюмень",
+    project="Салон красоты",
+    show_datetime="2026-02-15 19:00",
+    utm_source="yandex"
 )
-bot_link = f"https://t.me/your_bot_username?start={link}"
 ```
 
 ## Структура проекта
@@ -124,10 +128,9 @@ teatrfest_bot/
 │   ├── start.py            # Обработчик команды /start
 │   ├── questionnaire.py    # Обработчик анкеты
 │   ├── promo.py            # Обработчик промокодов
-│   └── help.py             # Обработчик помощи
-├── keyboards/              # Клавиатуры бота
-│   ├── __init__.py
-│   └── inline.py           # Inline клавиатуры
+│   ├── help.py             # Обработчик помощи
+│   ├── menu.py             # Обработчик основного меню
+│   └── admin.py            # Обработчик админ-панели
 ├── states/                 # Состояния FSM
 │   ├── __init__.py
 │   └── questionnaire.py    # Состояния анкеты
@@ -145,9 +148,17 @@ teatrfest_bot/
 │   └── middleware.py       # Middleware для передачи зависимостей
 ├── utils/                  # Вспомогательные функции
 │   ├── __init__.py
-│   └── utils.py            # Утилиты (кодирование ссылок, промокоды)
+│   ├── utils.py            # Утилиты (кодирование ссылок, промокоды)
+│   ├── admin.py            # Утилиты для админ-панели
+│   └── link_generator.py   # Генератор ссылок на бота
+├── keyboards/              # Клавиатуры бота
+│   ├── __init__.py
+│   ├── inline.py           # Inline клавиатуры
+│   ├── menu.py             # Основное меню
+│   └── admin.py            # Клавиатуры админ-панели
 ├── requirements.txt        # Зависимости Python
 ├── env.example             # Пример конфигурации
+├── link_mappings.json      # Маппинги ссылок (slug → проект) - создается автоматически
 ├── .gitignore             # Игнорируемые файлы
 └── README.md              # Документация
 ```
@@ -158,6 +169,16 @@ teatrfest_bot/
 
 - `users` - основная информация о пользователях
 - `user_genres` - выбранные жанры пользователей
+
+**Примечание:** Маппинги ссылок (slug → проект) хранятся в JSON файле `link_mappings.json`, а не в базе данных, чтобы они не терялись при удалении БД.
+
+## Админ-панель
+
+Бот включает встроенную админ-панель для управления маппингами ссылок.
+
+**Доступ:** Команда `/admin` (только для администраторов)
+
+**Ссылка на бота:** [@theatrfest_help_bot](https://t.me/theatrfest_help_bot)
 
 ## Логирование
 
