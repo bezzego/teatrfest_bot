@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from aiogram.types import Message, FSInputFile
+from aiogram.types import Message, FSInputFile, InputFile
 from database import Database
 from config import Config
 from keyboards import get_promo_keyboard
@@ -8,7 +8,10 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
-# Путь к изображению промокода
+# File ID изображения промокода (получается через скрипт scripts/get_file_id.py)
+# Если file_id не задан, будет использоваться локальный файл
+PROMO_IMAGE_FILE_ID = None  # Замените на file_id после запуска скрипта get_file_id.py
+# Путь к изображению промокода (fallback, если file_id не задан)
 PROMO_IMAGE_PATH = Path(__file__).parent.parent / "images" / "promo_banner.jpg"
 
 
@@ -42,45 +45,49 @@ async def send_promo_code(message_or_call, db: Database, user_id: int, promo_cod
     
     keyboard = get_promo_keyboard(final_ticket_url)
     
-    # Проверяем наличие изображения
-    if PROMO_IMAGE_PATH.exists():
+    # Определяем, как отправлять: через callback.message или обычное сообщение
+    send_target = None
+    if hasattr(message_or_call, 'answer_photo'):
+        send_target = message_or_call
+    elif hasattr(message_or_call, 'message') and hasattr(message_or_call.message, 'answer_photo'):
+        send_target = message_or_call.message
+    
+    # Пытаемся отправить с изображением
+    if send_target:
         try:
-            photo = FSInputFile(PROMO_IMAGE_PATH)
-            
-            # Определяем, как отправлять: через callback.message или обычное сообщение
-            if hasattr(message_or_call, 'answer_photo'):
-                # Это обычное сообщение
-                await message_or_call.answer_photo(
-                    photo=photo,
+            # Приоритет: используем file_id, если он задан (быстрее и не требует загрузки)
+            if PROMO_IMAGE_FILE_ID:
+                logger.debug(f"Использование file_id для изображения промокода: {PROMO_IMAGE_FILE_ID}")
+                await send_target.answer_photo(
+                    photo=PROMO_IMAGE_FILE_ID,
                     caption=text,
                     reply_markup=keyboard,
                     parse_mode="HTML"
                 )
-            elif hasattr(message_or_call, 'message') and hasattr(message_or_call.message, 'answer_photo'):
-                # Это callback, отправляем через message
-                await message_or_call.message.answer_photo(
+            # Fallback: используем локальный файл
+            elif PROMO_IMAGE_PATH.exists():
+                logger.debug(f"Использование локального файла для изображения промокода: {PROMO_IMAGE_PATH}")
+                photo = FSInputFile(PROMO_IMAGE_PATH)
+                await send_target.answer_photo(
                     photo=photo,
                     caption=text,
                     reply_markup=keyboard,
                     parse_mode="HTML"
                 )
             else:
-                # Fallback: отправляем без фото
-                logger.warning(f"Не удалось определить способ отправки фото для {type(message_or_call)}")
-                if hasattr(message_or_call, 'answer'):
-                    await message_or_call.answer(text, reply_markup=keyboard, parse_mode="HTML")
-                elif hasattr(message_or_call, 'message') and hasattr(message_or_call.message, 'answer'):
-                    await message_or_call.message.answer(text, reply_markup=keyboard, parse_mode="HTML")
+                logger.warning(f"Изображение промокода не найдено. file_id не задан, файл не найден: {PROMO_IMAGE_PATH}")
+                # Отправляем без фото
+                await send_target.answer(text, reply_markup=keyboard, parse_mode="HTML")
         except Exception as e:
             logger.error(f"Ошибка при отправке изображения промокода: {e}", exc_info=True)
             # Fallback: отправляем без фото
-            if hasattr(message_or_call, 'answer'):
-                await message_or_call.answer(text, reply_markup=keyboard, parse_mode="HTML")
-            elif hasattr(message_or_call, 'message') and hasattr(message_or_call.message, 'answer'):
-                await message_or_call.message.answer(text, reply_markup=keyboard, parse_mode="HTML")
+            try:
+                await send_target.answer(text, reply_markup=keyboard, parse_mode="HTML")
+            except Exception as e2:
+                logger.error(f"Критическая ошибка при отправке сообщения: {e2}", exc_info=True)
     else:
-        logger.warning(f"Изображение промокода не найдено по пути: {PROMO_IMAGE_PATH}")
-        # Отправляем без фото
+        # Fallback: отправляем без фото
+        logger.debug("Не удалось определить способ отправки фото, отправляем текст")
         if hasattr(message_or_call, 'edit_text'):
             await message_or_call.edit_text(text, reply_markup=keyboard, parse_mode="HTML")
         elif hasattr(message_or_call, 'answer'):
