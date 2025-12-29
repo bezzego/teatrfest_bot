@@ -225,31 +225,74 @@ async def faq_handler(message: Message, db: Database, config: Config):
     await message.answer(faq_text, parse_mode="HTML", reply_markup=keyboard)
 
 
+def get_phone_by_city(city: str) -> str:
+    """Определяет телефон горячей линии по городу
+    
+    Args:
+        city: Название города
+        
+    Returns:
+        Номер телефона для соответствующего CRM
+        ЭТАЖИ (city2): 8 (800) 505-51-49
+        АТЛАНТ (city1): 8 (800) 555-48-52
+    """
+    if not city:
+        # Если город не указан, возвращаем телефон по умолчанию (ЭТАЖИ)
+        return "8 (800) 505-51-49"
+    
+    city_lower = city.lower()
+    # Города для АТЛАНТ (city1)
+    city1_cities = [
+        "волгоград", "краснодар", "ростов-на-дону", "ростов",
+        "самара", "сочи", "ставрополь", "уфа"
+    ]
+    
+    # Проверяем, относится ли город к city1 (АТЛАНТ)
+    if any(c in city_lower for c in city1_cities):
+        return "8 (800) 555-48-52"  # АТЛАНТ
+    else:
+        return "8 (800) 505-51-49"  # ЭТАЖИ
+
+
 @router.message(F.text == "☎️ Контакты и ссылки")
-async def contacts_handler(message: Message, config: Config):
+async def contacts_handler(message: Message, db: Database, config: Config):
     """Обработчик кнопки 'Контакты и ссылки'"""
     user_id = message.from_user.id
     logger.info(f"Пользователь {user_id} запросил контакты")
     
+    # Получаем город пользователя из БД
+    user = await db.get_user(user_id)
+    city = user.get('city', '') if user else ''
+    
+    # Определяем телефон по городу
+    hotline_phone = get_phone_by_city(city)
+    logger.debug(f"Определен телефон для города '{city}': {hotline_phone}")
+    
     # Получаем текст контактов из настроек
     settings_service = get_bot_settings_service()
-    text = settings_service.get_contacts_text()
+    contacts_text = settings_service.get_contacts_text()
     
-    if not text:
+    if not contacts_text:
         # Fallback на дефолтный текст, если настройки не заданы
-        text = (
+        contacts_text = (
             "☎️ Контакты и ссылки\n\n"
             f"📞 <b>Горячая линия:</b>\n"
-            f"Телефон: {config.hotline_phone}\n"
+            f"Телефон: {hotline_phone}\n"
             f"Email: {config.hotline_email}\n"
             f"Режим работы: ежедневно с 10:00 до 22:00\n\n"
-            
             "🌐 <b>Наш сайт:</b>\n"
             "love-teatrfest.ru\n\n"
-            
             "📱 <b>Мы в социальных сетях:</b>\n"
             "Следите за новостями и анонсами спектаклей в наших социальных сетях."
         )
+    else:
+        # Заменяем телефон в тексте на правильный для города пользователя
+        # Заменяем оба возможных телефона на нужный
+        contacts_text = contacts_text.replace("8 (800) 505-51-49", hotline_phone)
+        contacts_text = contacts_text.replace("8 (800) 555-48-52", hotline_phone)
+        # Также заменяем телефон из config, если он там есть
+        if config.hotline_phone:
+            contacts_text = contacts_text.replace(config.hotline_phone, hotline_phone)
     
     # Можно добавить кнопки с ссылками на соц. сети, если они есть в конфиге
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -262,7 +305,7 @@ async def contacts_handler(message: Message, config: Config):
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
     
-    await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
+    await message.answer(contacts_text, reply_markup=keyboard, parse_mode="HTML")
 
 
 @router.message(F.text == "⚙️ Админ-меню")
