@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
@@ -6,14 +7,19 @@ from config import Config
 from database import Database
 from middleware import DatabaseMiddleware, ConfigMiddleware
 from handlers import start, questionnaire, help, menu, admin
-from logger import setup_logger
+from logger import setup_logger, configure_root_logging
+
+# Настраиваем максимальное логирование для всего проекта
+configure_root_logging(level=logging.DEBUG)
 
 logger = setup_logger(__name__)
 
 
 async def main():
     """Главная функция запуска бота"""
+    logger.info("=" * 60)
     logger.info("Запуск бота...")
+    logger.debug("Инициализация окружения...")
     
     # Загружаем конфигурацию
     logger.debug("Загрузка конфигурации...")
@@ -23,18 +29,23 @@ async def main():
         logger.error("BOT_TOKEN не установлен в .env файле")
         return
     
-    logger.info("Конфигурация загружена успешно")
+    logger.info(f"✅ Config loaded successfully: DB={config.database_path} BOT_USERNAME={config.bot_username}")
+    logger.debug(f"Admin IDs: {config.admin_ids}")
+    logger.debug(f"Link mappings path: {config.link_mappings_path}")
     
     # Инициализируем бота и диспетчер
     logger.debug("Инициализация бота и диспетчера...")
     bot = Bot(token=config.bot_token)
+    logger.debug(f"Bot initialized: @{config.bot_username} (ID: {bot.id if hasattr(bot, 'id') else 'N/A'})")
+    
     dp = Dispatcher(storage=MemoryStorage())
+    logger.debug("Dispatcher initialized with MemoryStorage")
     
     # Инициализируем базу данных
     logger.info(f"Инициализация базы данных: {config.database_path}")
     db = Database(config.database_path)
     await db.init_db()
-    logger.info("База данных инициализирована успешно")
+    logger.info("✅ База данных инициализирована успешно")
     
     # Регистрируем middleware
     logger.debug("Регистрация middleware...")
@@ -64,7 +75,11 @@ async def main():
     
     try:
         # Запускаем бота
-        logger.info("Начало polling...")
+        logger.info("=" * 60)
+        logger.info("Start polling")
+        bot_info = await bot.get_me()
+        logger.info(f"Run polling for bot @{bot_info.username} id={bot_info.id} - '{bot_info.full_name}'")
+        logger.debug("=" * 60)
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     except KeyboardInterrupt:
         logger.warning("Получен сигнал прерывания (Ctrl+C)")

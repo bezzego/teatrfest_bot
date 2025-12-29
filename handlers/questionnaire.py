@@ -271,10 +271,11 @@ async def email_confirm_yes(callback: CallbackQuery, state: FSMContext, db: Data
         await callback.answer("Произошла ошибка")
         return
     
-    # Генерируем промокод
-    project = user.get('project', 'DEFAULT')
-    promo_code = generate_promo_code(user_id, project)
-    logger.info(f"Сгенерирован промокод {promo_code} для пользователя {user_id}, проект: {project}")
+    # Получаем общий промокод из настроек
+    from services.bot_settings import get_bot_settings_service
+    settings_service = get_bot_settings_service()
+    promo_code = settings_service.get_promo_code()
+    logger.info(f"Использован общий промокод {promo_code} для пользователя {user_id}")
     await db.update_user_promo_code(user_id, promo_code)
     
     # Отправляем в AmoCRM

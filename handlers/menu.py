@@ -52,12 +52,11 @@ async def my_promo_code_handler(message: Message, db: Database, config: Config):
     
     promo_code = user.get('promo_code')
     
+    # Если у пользователя нет промокода в БД, используем общий промокод из настроек
     if not promo_code:
-        await message.answer(
-            "У вас ещё нет промокода. Заполните райдер, чтобы получить персональную скидку!",
-            reply_markup=get_main_menu_keyboard(user_id, config)
-        )
-        return
+        settings_service = get_bot_settings_service()
+        promo_code = settings_service.get_promo_code()
+        logger.debug(f"Пользователь {user_id} не имеет промокода в БД, используется общий: {promo_code}")
     
     project = user.get('project', 'Спектакль')
     name = user.get('name', '')

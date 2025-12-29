@@ -31,6 +31,7 @@ class AdminStates(StatesGroup):
     waiting_for_ticket_url = State()
     editing_slug = State()
     # Состояния для редактирования настроек
+    editing_promo_code = State()
     editing_ticket_url = State()
     editing_faq_text = State()
     editing_contacts_text = State()
@@ -391,6 +392,65 @@ async def settings_menu_callback(callback: CallbackQuery, config: Config):
     await callback.answer()
 
 
+@router.callback_query(F.data == "admin_edit_promo_code")
+async def edit_promo_code_start(callback: CallbackQuery, state: FSMContext, config: Config):
+    """Начало редактирования общего промокода"""
+    user_id = callback.from_user.id
+
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+
+    settings_service = get_bot_settings_service()
+    current_promo = settings_service.get_promo_code()
+
+    await state.set_state(AdminStates.editing_promo_code)
+    text = (
+        f"🎟 Редактирование общего промокода\n\n"
+        f"Текущий промокод: <code>{current_promo}</code>\n\n"
+        f"Введите новый промокод (буквы будут автоматически преобразованы в верхний регистр):"
+    )
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=get_back_to_settings_keyboard())
+    await callback.answer()
+
+
+@router.message(AdminStates.editing_promo_code)
+async def process_new_promo_code(message: Message, state: FSMContext, config: Config):
+    """Обработка нового общего промокода"""
+    user_id = message.from_user.id
+
+    if not is_admin(user_id, config):
+        await message.answer("❌ У вас нет доступа к админ-панели.")
+        return
+
+    new_promo = message.text.strip().upper()
+    
+    # Простая валидация промокода (только буквы и цифры, не пустой)
+    if not new_promo or len(new_promo) < 3:
+        await message.answer(
+            "❌ Промокод должен содержать минимум 3 символа (буквы и/или цифры).\n\n"
+            "Попробуйте еще раз:",
+            reply_markup=get_back_to_settings_keyboard()
+        )
+        return
+    
+    settings_service = get_bot_settings_service()
+
+    try:
+        settings_service.set_promo_code(new_promo)
+        logger.info(f"Администратор {user_id} обновил общий промокод: {new_promo}")
+        await message.answer(
+            f"✅ Общий промокод успешно обновлен на: <code>{new_promo}</code>\n\n"
+            f"Теперь все пользователи будут получать этот промокод.",
+            parse_mode="HTML",
+            reply_markup=get_settings_menu_keyboard()
+        )
+        await state.clear()
+    except Exception as e:
+        logger.error(f"Ошибка при обновлении промокода: {e}")
+        await message.answer(f"❌ Ошибка при обновлении промокода: {e}", reply_markup=get_back_to_settings_keyboard())
+
+
 @router.callback_query(F.data == "admin_edit_ticket_url")
 async def edit_ticket_url_start(callback: CallbackQuery, state: FSMContext, config: Config):
     """Начало редактирования ссылки на покупку билетов"""
@@ -426,7 +486,7 @@ async def process_new_ticket_url(message: Message, state: FSMContext, config: Co
     settings_service = get_bot_settings_service()
 
     try:
-        settings_service.update_setting('ticket_url', new_url)
+        settings_service.set_ticket_url(new_url)
         logger.info(f"Администратор {user_id} обновил ссылку на билеты: {new_url}")
         await message.answer(
             f"✅ Ссылка на покупку билетов успешно обновлена на: <code>{new_url}</code>",
@@ -474,7 +534,7 @@ async def process_new_faq_text(message: Message, state: FSMContext, config: Conf
     settings_service = get_bot_settings_service()
 
     try:
-        settings_service.update_setting('faq_text', new_text)
+        settings_service.set_faq_text(new_text)
         logger.info(f"Администратор {user_id} обновил текст FAQ")
         await message.answer(
             f"✅ Текст 'Частые вопросы' успешно обновлен.",
@@ -522,7 +582,7 @@ async def process_new_contacts_text(message: Message, state: FSMContext, config:
     settings_service = get_bot_settings_service()
 
     try:
-        settings_service.update_setting('contacts_text', new_text)
+        settings_service.set_contacts_text(new_text)
         logger.info(f"Администратор {user_id} обновил текст контактов")
         await message.answer(
             f"✅ Текст 'Контакты и ссылки' успешно обновлен.",

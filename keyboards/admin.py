@@ -66,6 +66,7 @@ def get_confirm_delete_keyboard(slug: str) -> InlineKeyboardMarkup:
 def get_settings_menu_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура для меню настроек бота"""
     return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎟 Общий промокод", callback_data="admin_edit_promo_code")],
         [InlineKeyboardButton(text="🔗 Ссылка на покупку билетов", callback_data="admin_edit_ticket_url")],
         [InlineKeyboardButton(text="❓ Текст 'Частые вопросы'", callback_data="admin_edit_faq_text")],
         [InlineKeyboardButton(text="☎️ Текст 'Контакты и ссылки'", callback_data="admin_edit_contacts_text")],

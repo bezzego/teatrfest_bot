@@ -27,6 +27,7 @@ class BotSettingsService:
             logger.info(f"Создание файла настроек: {self.file_path}")
             default_settings = {
                 "ticket_url": "https://your-ticket-url.com",
+                "promo_code": "FHHD438H",  # Общий промокод для всех пользователей
                 "faq_text": (
                     "🤔 Частые вопросы зрителей\n\n"
                     "❓ <b>Как получить промокод?</b>\n"
@@ -118,6 +119,19 @@ class BotSettingsService:
         settings['contacts_text'] = text
         self._write_settings(settings)
         logger.debug(f"Текст контактов обновлен")
+    
+    def get_promo_code(self) -> str:
+        """Получить общий промокод"""
+        settings = self._read_settings()
+        return settings.get('promo_code', 'FHHD438H')
+    
+    def set_promo_code(self, promo_code: str):
+        """Установить общий промокод"""
+        logger.info(f"Обновление общего промокода: {promo_code}")
+        settings = self._read_settings()
+        settings['promo_code'] = promo_code.strip().upper()
+        self._write_settings(settings)
+        logger.debug(f"Общий промокод обновлен")
     
     def get_all_settings(self) -> Dict:
         """Получить все настройки"""
