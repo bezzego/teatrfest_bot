@@ -9,7 +9,7 @@ from logger import get_logger
 logger = get_logger(__name__)
 
 # Путь к изображению промокода
-PROMO_IMAGE_PATH = Path(__file__).parent.parent / "images" / "На рассылки скидка 300 р..jpg"
+PROMO_IMAGE_PATH = Path(__file__).parent.parent / "images" / "promo_banner.jpg"
 
 
 async def send_promo_code(message_or_call, db: Database, user_id: int, promo_code: str, project_name: str, config: Config, ticket_url: str = None):
