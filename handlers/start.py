@@ -91,11 +91,12 @@ async def cmd_start(message: Message, state: FSMContext, db: Database, config: C
                     project=mapping['project'],
                     show_datetime=mapping['show_datetime']
                 )
-                # Сохраняем ticket_url в состояние для использования при отправке промокода
-                if mapping.get('ticket_url'):
-                    ticket_url = mapping['ticket_url']
-                    await state.update_data(ticket_url=ticket_url)
-                    logger.debug(f"Сохранена ссылка на билеты для пользователя {user_id}: {ticket_url}")
+                # Сохраняем ссылку на выбор мест в состояние для использования при отправке промокода
+                # Приоритет: seat_selection_url > ticket_url
+                seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url')
+                if seat_selection_url:
+                    await state.update_data(seat_selection_url=seat_selection_url)
+                    logger.debug(f"Сохранена ссылка на выбор мест для пользователя {user_id}: {seat_selection_url}")
                 logger.info(f"Данные пользователя {user_id} сохранены из маппинга slug {slug}")
             else:
                 logger.warning(f"Маппинг для slug {slug} не найден в БД")

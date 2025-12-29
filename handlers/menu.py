@@ -90,7 +90,7 @@ async def schedule_handler(message: Message):
     
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🌐 Открыть расписание", url="https://love-teatrfest.ru")]
+        [InlineKeyboardButton(text="🌐 Открыть расписание", url="https://love-teatrfest.ru/?utm_source=tg-bot")]
     ])
     
     await message.answer(text, reply_markup=keyboard)

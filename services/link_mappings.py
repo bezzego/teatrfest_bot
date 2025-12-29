@@ -81,6 +81,7 @@ class LinkMappingsService:
         project: str,
         show_datetime: str,
         ticket_url: Optional[str] = None,
+        seat_selection_url: Optional[str] = None,
         crm_type: Optional[str] = None
     ):
         """Создать или обновить маппинг ссылки"""
@@ -103,6 +104,7 @@ class LinkMappingsService:
             "project": project,
             "show_datetime": show_datetime,
             "ticket_url": ticket_url,
+            "seat_selection_url": seat_selection_url,
             "crm_type": crm_type,
             "created_at": mappings.get(slug, {}).get("created_at") or self._get_current_timestamp(),
             "updated_at": self._get_current_timestamp()

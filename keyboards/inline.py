@@ -11,7 +11,8 @@ def get_start_keyboard() -> InlineKeyboardMarkup:
 def get_consent_keyboard() -> InlineKeyboardMarkup:
     """Клавиатура для согласия на обработку данных"""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="✅ Согласен(а), продолжаем", callback_data="consent_yes")]
+        [InlineKeyboardButton(text="✅ Согласен(а), продолжаем", callback_data="consent_yes")],
+        [InlineKeyboardButton(text="📄 Политика конфиденциальности", url="https://love-teatrfest.ru/politic")]
     ])
 
 

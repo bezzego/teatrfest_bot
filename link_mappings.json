@@ -6,7 +6,8 @@
     "ticket_url": "https://love-teatrfest.ru/ufa2",
     "crm_type": "city1",
     "created_at": "2025-12-28T17:15:54.408509",
-    "updated_at": "2025-12-28T17:15:54.408516"
+    "updated_at": "2025-12-28T17:15:54.408516",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=238&unifd-refer=tg-bot"
   },
   "samara2": {
     "city": "Самара",
@@ -15,7 +16,8 @@
     "ticket_url": "https://love-teatrfest.ru/samara2",
     "crm_type": "city1",
     "created_at": "2025-12-28T17:15:54.409376",
-    "updated_at": "2025-12-28T17:15:54.409378"
+    "updated_at": "2025-12-28T17:15:54.409378",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=239&unifd-refer=tg-bot"
   },
   "sochi1": {
     "city": "Сочи",
@@ -24,7 +26,8 @@
     "ticket_url": "https://love-teatrfest.ru/sochi1",
     "crm_type": "city1",
     "created_at": "2025-12-28T17:15:54.409606",
-    "updated_at": "2025-12-28T17:15:54.409607"
+    "updated_at": "2025-12-28T17:15:54.409607",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=268&unifd-refer=tg-bot"
   },
   "rostov1": {
     "city": "Ростов-на-Дону",
@@ -33,7 +36,8 @@
     "ticket_url": "https://love-teatrfest.ru/rostov1",
     "crm_type": "city1",
     "created_at": "2025-12-28T17:15:54.409833",
-    "updated_at": "2025-12-28T17:15:54.409835"
+    "updated_at": "2025-12-28T17:15:54.409835",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=258&unifd-refer=tg-bot"
   },
   "kazan3": {
     "city": "Казань",
@@ -42,7 +46,8 @@
     "ticket_url": "https://love-teatrfest.ru/kazan3",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.410063",
-    "updated_at": "2025-12-28T17:15:54.410065"
+    "updated_at": "2025-12-28T17:15:54.410065",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=263&unifd-refer=tg-bot"
   },
   "krasnodar3": {
     "city": "Краснодар",
@@ -51,7 +56,8 @@
     "ticket_url": "https://love-teatrfest.ru/krasnodar3",
     "crm_type": "city1",
     "created_at": "2025-12-28T17:15:54.410276",
-    "updated_at": "2025-12-28T17:15:54.410278"
+    "updated_at": "2025-12-28T17:15:54.410278",
+    "seat_selection_url": "https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=78&unifd-refer=tg-bot"
   },
   "stavropol": {
     "city": "Ставрополь",
@@ -60,7 +66,8 @@
     "ticket_url": "https://love-teatrfest.ru/stavropol",
     "crm_type": "city1",
     "created_at": "2025-12-28T17:15:54.410526",
-    "updated_at": "2025-12-28T17:15:54.410530"
+    "updated_at": "2025-12-28T17:15:54.410530",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=270&unifd-refer=tg-bot"
   },
   "minsk1": {
     "city": "Минск",
@@ -69,7 +76,8 @@
     "ticket_url": "https://teatrfest.com/minsk1",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.410778",
-    "updated_at": "2025-12-28T17:15:54.410780"
+    "updated_at": "2025-12-28T17:15:54.410780",
+    "seat_selection_url": "https://bezkassira.by/spektakl-salon-krasoty-ili-o-chem-govoryat-zhenshhiny-minsk-138209/buy/"
   },
   "voronezh3": {
     "city": "Воронеж",
@@ -78,7 +86,8 @@
     "ticket_url": "https://love-teatrfest.ru/voronezh3",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.411089",
-    "updated_at": "2025-12-28T17:15:54.411091"
+    "updated_at": "2025-12-28T17:15:54.411091",
+    "seat_selection_url": "https://teatrfest.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=219&unifd-refer=tg-bot"
   },
   "krasnoyarsk2": {
     "city": "Красноярск",
@@ -87,7 +96,8 @@
     "ticket_url": "https://love-teatrfest.ru/krasnoyarsk2",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.411322",
-    "updated_at": "2025-12-28T17:15:54.411324"
+    "updated_at": "2025-12-28T17:15:54.411324",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=264&unifd-refer=tg-bot"
   },
   "novosibirsk2": {
     "city": "Новосибирск",
@@ -96,7 +106,8 @@
     "ticket_url": "https://love-teatrfest.ru/novosibirsk2",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.411631",
-    "updated_at": "2025-12-28T17:15:54.411633"
+    "updated_at": "2025-12-28T17:15:54.411633",
+    "seat_selection_url": "https://teatrfest.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=213&unifd-refer=tg-bot"
   },
   "ekb1": {
     "city": "Екатеринбург",
@@ -105,7 +116,8 @@
     "ticket_url": "https://love-teatrfest.ru/ekb1",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.411854",
-    "updated_at": "2025-12-28T17:15:54.411855"
+    "updated_at": "2025-12-28T17:15:54.411855",
+    "seat_selection_url": "https://teatrfest.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=229&unifd-refer=tg-bot"
   },
   "kazan2": {
     "city": "Казань",
@@ -114,7 +126,8 @@
     "ticket_url": "https://love-teatrfest.ru/kazan2",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.412135",
-    "updated_at": "2025-12-28T17:15:54.412137"
+    "updated_at": "2025-12-28T17:15:54.412137",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=281&unifd-refer=tg-bot"
   },
   "samara1": {
     "city": "Самара",
@@ -123,7 +136,8 @@
     "ticket_url": "https://love-teatrfest.ru/samara1",
     "crm_type": "city1",
     "created_at": "2025-12-28T17:15:54.412383",
-    "updated_at": "2025-12-28T17:15:54.412385"
+    "updated_at": "2025-12-28T17:15:54.412385",
+    "seat_selection_url": "https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=80&unifd-refer=tg-bot"
   },
   "chelyabinsk1": {
     "city": "Челябинск",
@@ -132,7 +146,8 @@
     "ticket_url": "https://love-teatrfest.ru/chelyabinsk1",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.412809",
-    "updated_at": "2025-12-28T17:15:54.412811"
+    "updated_at": "2025-12-28T17:15:54.412811",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=282&unifd-refer=tg-bot"
   },
   "tyumen1": {
     "city": "Тюмень",
@@ -141,7 +156,8 @@
     "ticket_url": "https://love-teatrfest.ru/tyumen1",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.413284",
-    "updated_at": "2025-12-28T17:15:54.413286"
+    "updated_at": "2025-12-28T17:15:54.413286",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=271&unifd-refer=tg-bot"
   },
   "omsk1": {
     "city": "Омск",
@@ -150,7 +166,8 @@
     "ticket_url": "https://love-teatrfest.ru/omsk1",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.413572",
-    "updated_at": "2025-12-28T17:15:54.413574"
+    "updated_at": "2025-12-28T17:15:54.413574",
+    "seat_selection_url": "https://teatrfest.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=225&unifd-refer=tg-bot"
   },
   "nab-chelny1": {
     "city": "Набережные Челны",
@@ -159,7 +176,8 @@
     "ticket_url": "https://love-teatrfest.ru/nab-chelny1",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.414232",
-    "updated_at": "2025-12-28T17:15:54.414234"
+    "updated_at": "2025-12-28T17:15:54.414234",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=274&unifd-refer=tg-bot"
   },
   "izhevsk1": {
     "city": "Ижевск",
@@ -168,7 +186,8 @@
     "ticket_url": "https://love-teatrfest.ru/izhevsk1",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.414608",
-    "updated_at": "2025-12-28T17:15:54.414610"
+    "updated_at": "2025-12-28T17:15:54.414610",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=266&unifd-refer=tg-bot"
   },
   "voronezh1": {
     "city": "Воронеж",
@@ -177,7 +196,8 @@
     "ticket_url": "https://love-teatrfest.ru/voronezh1",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.414893",
-    "updated_at": "2025-12-28T17:15:54.414895"
+    "updated_at": "2025-12-28T17:15:54.414895",
+    "seat_selection_url": "https://teatrfest.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=234&unifd-refer=tg-bot"
   },
   "nn1": {
     "city": "Нижний Новгород",
@@ -186,6 +206,7 @@
     "ticket_url": "https://love-teatrfest.ru/nn1",
     "crm_type": "city2",
     "created_at": "2025-12-28T17:15:54.415344",
-    "updated_at": "2025-12-28T17:15:54.415346"
+    "updated_at": "2025-12-28T17:15:54.415346",
+    "seat_selection_url": "https://teatrfest3.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=284&unifd-refer=tg-bot"
   }
 }

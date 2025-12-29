@@ -314,13 +314,20 @@ async def email_confirm_yes(callback: CallbackQuery, state: FSMContext, db: Data
         telegram_username=telegram_username
     )
     
-    # Получаем ticket_url из состояния (если был передан через slug) или используем из config
+    # Получаем ссылку на выбор мест из состояния (если был передан через slug)
+    # Приоритет: seat_selection_url из состояния > ticket_url из состояния > из настроек
     state_data = await state.get_data()
-    ticket_url = state_data.get('ticket_url') or config.ticket_url
+    seat_selection_url = state_data.get('seat_selection_url') or state_data.get('ticket_url')
+    
+    # Если нет в состоянии, используем из настроек
+    if not seat_selection_url:
+        from services.bot_settings import get_bot_settings_service
+        settings_service = get_bot_settings_service()
+        seat_selection_url = settings_service.get_ticket_url()
     
     # Отправляем промокод
     logger.info(f"Отправка промокода пользователю {user_id}")
-    await send_promo_code(callback.message, db, user_id, promo_code, user.get('project', 'Спектакль'), config, ticket_url)
+    await send_promo_code(callback.message, db, user_id, promo_code, user.get('project', 'Спектакль'), config, seat_selection_url)
     await state.clear()
     logger.info(f"Анкета пользователя {user_id} успешно завершена")
     await callback.answer()
