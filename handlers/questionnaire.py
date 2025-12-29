@@ -253,12 +253,18 @@ async def process_email(message: Message, state: FSMContext, db: Database):
 async def email_confirm_yes(callback: CallbackQuery, state: FSMContext, db: Database, config: Config):
     """Подтверждение email"""
     user_id = callback.from_user.id
+    
+    # Отвечаем на callback сразу, чтобы избежать ошибки "query is too old"
+    try:
+        await callback.answer("⏳ Обрабатываем...")
+    except Exception as e:
+        logger.warning(f"Не удалось ответить на callback сразу: {e}")
+    
     data = await state.get_data()
     email = data.get('email')
     
     if not email:
         logger.error(f"Email не найден в состоянии для пользователя {user_id}")
-        await callback.answer("Произошла ошибка. Пожалуйста, начните заново с /start")
         return
     
     logger.info(f"Пользователь {user_id} подтвердил email: {email}")
@@ -268,7 +274,7 @@ async def email_confirm_yes(callback: CallbackQuery, state: FSMContext, db: Data
     user = await db.get_user(user_id)
     if not user:
         logger.error(f"Пользователь {user_id} не найден в БД")
-        await callback.answer("Произошла ошибка")
+        # Не вызываем callback.answer() здесь, так как уже ответили в начале
         return
     
     # Получаем общий промокод из настроек
@@ -305,14 +311,25 @@ async def email_confirm_yes(callback: CallbackQuery, state: FSMContext, db: Data
     # Получаем telegram данные
     telegram_username = callback.from_user.username
     
-    await create_lead_in_city(
-        user_data,
-        user.get('city', ''),
-        config.amocrm_city1,
-        config.amocrm_city2,
-        telegram_id=user_id,
-        telegram_username=telegram_username
-    )
+    # Отправляем в AmoCRM асинхронно, не ждем завершения
+    # Это позволяет пользователю быстрее получить промокод
+    async def send_to_amocrm_background():
+        """Фоновая отправка в AmoCRM с обработкой ошибок"""
+        try:
+            await create_lead_in_city(
+                user_data,
+                user.get('city', ''),
+                config.amocrm_city1,
+                config.amocrm_city2,
+                telegram_id=user_id,
+                telegram_username=telegram_username
+            )
+            logger.info(f"✅ Сделка успешно создана в AmoCRM для пользователя {user_id}")
+        except Exception as e:
+            logger.error(f"❌ Ошибка при создании сделки в AmoCRM для пользователя {user_id}: {e}", exc_info=True)
+    
+    import asyncio
+    asyncio.create_task(send_to_amocrm_background())
     
     # Получаем ссылку на выбор мест из состояния (если был передан через slug)
     # Приоритет: seat_selection_url из состояния > ticket_url из состояния > из настроек
@@ -330,11 +347,16 @@ async def email_confirm_yes(callback: CallbackQuery, state: FSMContext, db: Data
     await send_promo_code(callback.message, db, user_id, promo_code, user.get('project', 'Спектакль'), config, seat_selection_url)
     await state.clear()
     logger.info(f"Анкета пользователя {user_id} успешно завершена")
-    await callback.answer()
+    
+    # Не вызываем callback.answer() здесь, так как уже ответили в начале
+    # и callback может быть уже истекшим после долгой обработки
     
     # Показываем основное меню
     from keyboards import get_main_menu_keyboard
-    await callback.message.answer("Используйте меню ниже для навигации:", reply_markup=get_main_menu_keyboard(user_id, config))
+    try:
+        await callback.message.answer("Используйте меню ниже для навигации:", reply_markup=get_main_menu_keyboard(user_id, config))
+    except Exception as e:
+        logger.error(f"Ошибка при отправке меню пользователю {user_id}: {e}")
 
 
 @router.callback_query(F.data == "email_confirm_no", StateFilter(QuestionnaireStates.waiting_for_email_confirm))

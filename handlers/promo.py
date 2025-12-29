@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 
 # File ID изображения промокода (получается через скрипт scripts/get_file_id.py)
 # Если file_id не задан, будет использоваться локальный файл
-PROMO_IMAGE_FILE_ID = "AgACAgIAAxkBAAIBB2lS9FpBOtZZMK-lYrZSy6VTzlcaAALSEmsbWy6ZSlXpisWyGHNMAQADAgADdwADNgQ"  # Замените на file_id после запуска скрипта get_file_id.py
+PROMO_IMAGE_FILE_ID = "AgACAgIAAxkBAAIFWmlTAAFssQWTx3z6ZUQpooNQWLx_MwACJQ9rGxaBmUq1OZLUiteSCAEAAwIAA3cAAzYE"  # Замените на file_id после запуска скрипта get_file_id.py
 # Путь к изображению промокода (fallback, если file_id не задан)
 PROMO_IMAGE_PATH = Path(__file__).parent.parent / "images" / "promo_banner.jpg"
 
