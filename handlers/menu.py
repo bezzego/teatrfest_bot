@@ -6,6 +6,7 @@ from database import Database
 from config import Config
 from keyboards import get_main_menu_keyboard
 from services.bot_settings import get_bot_settings_service
+from services.link_mappings import get_link_mappings_service
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -188,6 +189,19 @@ async def faq_handler(message: Message, db: Database, config: Config):
     hotline_phone = get_phone_by_city(city)
     logger.debug(f"Определен телефон для FAQ города '{city}': {hotline_phone}")
     
+    # Получаем ссылку на выбор мест в зависимости от города пользователя
+    default_seat_url = "https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=80&unifd-refer=tg-bot"
+    official_site_url = default_seat_url
+    
+    if user and city:
+        # Пытаемся найти маппинг по городу пользователя
+        link_mappings_service = get_link_mappings_service()
+        all_mappings = link_mappings_service.get_all_link_mappings()
+        for mapping in all_mappings:
+            if mapping.get('city', '').lower() == city.lower():
+                official_site_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
+                break
+    
     # Получаем текст FAQ из настроек
     settings_service = get_bot_settings_service()
     faq_text = settings_service.get_faq_text()
@@ -252,8 +266,7 @@ async def faq_handler(message: Message, db: Database, config: Config):
             )
         ])
     
-    # Добавляем кнопку "Перейти на официальный сайт организатора"
-    official_site_url = "https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=80&unifd-refer=tg-bot"
+    # Добавляем кнопку "Перейти на официальный сайт организатора" с динамической ссылкой
     keyboard_buttons.append([
         InlineKeyboardButton(
             text="🎫 Перейти на официальный сайт организатора",
