@@ -27,19 +27,35 @@ async def how_to_apply_promo(callback: CallbackQuery, db: Database, config: Conf
         settings_service = get_bot_settings_service()
         promo_code = settings_service.get_promo_code()
     
-    # Получаем ссылку на выбор мест в зависимости от города пользователя
+    # Получаем ссылку на выбор мест в зависимости от города и проекта пользователя
     default_seat_url = "https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=80&unifd-refer=tg-bot"
     seat_selection_url = default_seat_url
     
     if user:
         city = user.get('city', '')
+        project = user.get('project', '')
         if city:
-            # Пытаемся найти маппинг по городу пользователя
+            # Пытаемся найти маппинг по городу и проекту пользователя
             all_mappings = await db.get_all_link_mappings()
-            for mapping in all_mappings:
-                if mapping.get('city', '').lower() == city.lower():
-                    seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
-                    break
+            # Сначала ищем точное совпадение по городу и проекту
+            found = False
+            if project:
+                for mapping in all_mappings:
+                    mapping_city = mapping.get('city', '').lower()
+                    mapping_project = mapping.get('project', '').lower()
+                    if mapping_city == city.lower() and mapping_project == project.lower():
+                        seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
+                        found = True
+                        logger.debug(f"Найден маппинг по городу '{city}' и проекту '{project}': {seat_selection_url}")
+                        break
+            
+            # Если не нашли по городу и проекту, ищем только по городу
+            if not found:
+                for mapping in all_mappings:
+                    if mapping.get('city', '').lower() == city.lower():
+                        seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
+                        logger.debug(f"Найден маппинг только по городу '{city}': {seat_selection_url}")
+                        break
     
     # Формируем текст инструкции с динамической ссылкой
     text = (

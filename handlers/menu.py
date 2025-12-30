@@ -61,9 +61,8 @@ async def my_promo_code_handler(message: Message, db: Database, config: Config):
     
     project = user.get('project', 'Спектакль')
     
-    # Получаем ссылку из настроек
-    settings_service = get_bot_settings_service()
-    ticket_url = settings_service.get_ticket_url()
+    # Используем фиксированную ссылку для кнопки "Купить билеты" в промокоде
+    ticket_url = "https://love-teatrfest.ru/?utm_source=tg-bot"
     
     # Используем функцию send_promo_code для отправки промокода с изображением
     from handlers.promo import send_promo_code
@@ -107,19 +106,35 @@ async def how_to_apply_promo_handler(message: Message, db: Database, config: Con
         settings_service = get_bot_settings_service()
         promo_code = settings_service.get_promo_code()
     
-    # Получаем ссылку на выбор мест в зависимости от города пользователя
+    # Получаем ссылку на выбор мест в зависимости от города и проекта пользователя
     default_seat_url = "https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=80&unifd-refer=tg-bot"
     seat_selection_url = default_seat_url
     
     if user:
         city = user.get('city', '')
+        project = user.get('project', '')
         if city:
-            # Пытаемся найти маппинг по городу пользователя
+            # Пытаемся найти маппинг по городу и проекту пользователя
             all_mappings = await db.get_all_link_mappings()
-            for mapping in all_mappings:
-                if mapping.get('city', '').lower() == city.lower():
-                    seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
-                    break
+            # Сначала ищем точное совпадение по городу и проекту
+            found = False
+            if project:
+                for mapping in all_mappings:
+                    mapping_city = mapping.get('city', '').lower()
+                    mapping_project = mapping.get('project', '').lower()
+                    if mapping_city == city.lower() and mapping_project == project.lower():
+                        seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
+                        found = True
+                        logger.debug(f"Найден маппинг по городу '{city}' и проекту '{project}': {seat_selection_url}")
+                        break
+            
+            # Если не нашли по городу и проекту, ищем только по городу
+            if not found:
+                for mapping in all_mappings:
+                    if mapping.get('city', '').lower() == city.lower():
+                        seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
+                        logger.debug(f"Найден маппинг только по городу '{city}': {seat_selection_url}")
+                        break
     
     # Формируем текст инструкции с динамической ссылкой
     text = (
@@ -189,18 +204,8 @@ async def faq_handler(message: Message, db: Database, config: Config):
     hotline_phone = get_phone_by_city(city)
     logger.debug(f"Определен телефон для FAQ города '{city}': {hotline_phone}")
     
-    # Получаем ссылку на выбор мест в зависимости от города пользователя
-    default_seat_url = "https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=80&unifd-refer=tg-bot"
-    official_site_url = default_seat_url
-    
-    if user and city:
-        # Пытаемся найти маппинг по городу пользователя
-        link_mappings_service = get_link_mappings_service()
-        all_mappings = link_mappings_service.get_all_link_mappings()
-        for mapping in all_mappings:
-            if mapping.get('city', '').lower() == city.lower():
-                official_site_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
-                break
+    # Используем фиксированную ссылку для кнопки "Перейти на официальный сайт организатора"
+    official_site_url = "https://love-teatrfest.ru/?utm_source=tg-bot"
     
     # Получаем текст FAQ из настроек
     settings_service = get_bot_settings_service()
