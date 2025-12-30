@@ -466,12 +466,15 @@ async def create_lead_in_city(user_data: Dict, city: str, city1_config: AmoCRMCo
     """
     city_lower = city.lower() if city else ""
     
-    # Города для первой CRM (АТЛАНТ)
+    # Города для первой CRM (АТЛАНТ) - все эти города используют номер 8 (800) 555-48-52
     city1_cities = [
         "волгоград", "volgograd",
         "краснодар", "krasnodar",
         "ростов-на-дону", "ростов", "rostov", "rostov-on-don",
         "самара", "samara",
+        "сочи", "sochi",
+        "ставрополь", "stavropol",
+        "уфа", "ufa",
     ]
     
     # Города для второй CRM (ЭТАЖИ)

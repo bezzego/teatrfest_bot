@@ -164,6 +164,13 @@ async def faq_handler(message: Message, db: Database, config: Config):
         settings_service = get_bot_settings_service()
         promo_code = settings_service.get_promo_code()
     
+    # Получаем город пользователя из БД для определения номера телефона
+    city = user.get('city', '') if user else ''
+    
+    # Определяем телефон по городу
+    hotline_phone = get_phone_by_city(city)
+    logger.debug(f"Определен телефон для FAQ города '{city}': {hotline_phone}")
+    
     # Получаем текст FAQ из настроек
     settings_service = get_bot_settings_service()
     faq_text = settings_service.get_faq_text()
@@ -198,7 +205,7 @@ async def faq_handler(message: Message, db: Database, config: Config):
             "Мы — ООО «Театральный Фестиваль», официальный организатор гастрольных спектаклей. Нас можно проверить:\n"
             "— по названию компании в поиске;\n"
             "— на странице спектакля (там указан организатор);\n"
-            "— по горячей линии 8-800-505-51-49.\n"
+            f"— по горячей линии {hotline_phone}.\n"
             "👉 Вы покупаете билеты напрямую у организатора.\n\n"
             f"Готовы выбрать места? 🎭\n"
             f"Переходите на официальный сайт организатора — там нет сервисного сбора, действует скидка –300 ₽ по промокоду <code>{promo_code}</code> и доступны все актуальные места в зале."
@@ -206,6 +213,10 @@ async def faq_handler(message: Message, db: Database, config: Config):
     else:
         # Заменяем промокод в тексте, если он есть в настройках
         faq_text = faq_text.replace("(указать промокод)", f"<code>{promo_code}</code>")
+        # Заменяем телефон в тексте на правильный для города пользователя
+        faq_text = faq_text.replace("8-800-505-51-49", hotline_phone)
+        faq_text = faq_text.replace("8 (800) 505-51-49", hotline_phone)
+        faq_text = faq_text.replace("8 (800) 555-48-52", hotline_phone)
     
     # Проверяем, есть ли у пользователя промокод
     user_has_promo = user and user.get('promo_code')
@@ -223,6 +234,15 @@ async def faq_handler(message: Message, db: Database, config: Config):
                 callback_data="start_questionnaire"
             )
         ])
+    
+    # Добавляем кнопку "Перейти на официальный сайт организатора"
+    official_site_url = "https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=80&unifd-refer=tg-bot"
+    keyboard_buttons.append([
+        InlineKeyboardButton(
+            text="🎫 Перейти на официальный сайт организатора",
+            url=official_site_url
+        )
+    ])
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons) if keyboard_buttons else None
     
@@ -245,10 +265,15 @@ def get_phone_by_city(city: str) -> str:
         return "8 (800) 505-51-49"
     
     city_lower = city.lower()
-    # Города для АТЛАНТ (city1)
+    # Города для АТЛАНТ (city1) - все эти города используют номер 8 (800) 555-48-52
     city1_cities = [
-        "волгоград", "краснодар", "ростов-на-дону", "ростов",
-        "самара", "сочи", "ставрополь", "уфа"
+        "волгоград", "volgograd",
+        "краснодар", "krasnodar",
+        "ростов-на-дону", "ростов", "rostov", "rostov-on-don",
+        "самара", "samara",
+        "сочи", "sochi",
+        "ставрополь", "stavropol",
+        "уфа", "ufa",
     ]
     
     # Проверяем, относится ли город к city1 (АТЛАНТ)
