@@ -360,7 +360,7 @@ async def contacts_handler(message: Message, db: Database, config: Config):
     # Создаем клавиатуру с кнопками для социальных сетей
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     keyboard_buttons = [
-        [InlineKeyboardButton(text="📱 ТГ-канал", url="https://t.me/teatrfestru")],
+        [InlineKeyboardButton(text="📱 ТГ-канал", url="https://t.me/+HbZF4yNk_sRiYWNi")],
         [InlineKeyboardButton(text="📘 Вконтакте", url="https://vk.com/teatrfestru")],
         [InlineKeyboardButton(text="📷 Инстаграм", url="https://www.instagram.com/teatrfest.ru")],
         [InlineKeyboardButton(text="▶️ Ютуб", url="https://www.youtube.com/@teatrfestru")],
