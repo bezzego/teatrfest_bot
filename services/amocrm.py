@@ -41,7 +41,7 @@ class AmoCRM:
     async def _get_access_token(self) -> str:
         """Получить актуальный access token (можно расширить логику обновления)"""
         return self.config.access_token
-    
+
     async def get_pipeline_statuses(self, pipeline_id: int) -> Optional[Dict]:
         """Получить статусы воронки
         
@@ -96,20 +96,19 @@ class AmoCRM:
 
         # Добавляем телефон
         if user_data.get('phone'):
-            # Нормализуем номер телефона (убираем лишние символы, оставляем только цифры и +)
-            phone = user_data['phone'].strip()
+            phone = str(user_data['phone']).strip()
             contact_data["custom_fields_values"].append({
                 "field_code": "PHONE",
-                "values": [{"value": phone, "enum_code": "WORK"}]
+                "values": [{"value": phone}]
             })
             logger.debug(f"Добавлено поле 'Телефон': {phone}")
 
         # Добавляем email
         if user_data.get('email'):
-            email = user_data['email'].strip()
+            email = str(user_data['email']).strip()
             contact_data["custom_fields_values"].append({
                 "field_code": "EMAIL",
-                "values": [{"value": email, "enum_code": "WORK"}]
+                "values": [{"value": email}]
             })
             logger.debug(f"Добавлено поле 'Email': {email}")
 
@@ -211,7 +210,9 @@ class AmoCRM:
             "Content-Type": "application/json"
         }
 
-        # Формируем название сделки в формате: "Город, Проект, ДД.ММ.ГГГГ. Квиз 3 - скидка 300 рублей"
+        # Формируем название сделки в формате: 
+        # АТЛАНТ: "Город, Проект, ДД.ММ.ГГГГ. Квиз 3 - скидка 300 рублей"
+        # ЭТАЖИ: "Город, Проект, ДД.ММ.ГГГГ. Квиз 1 - скидка 300"
         city = user_data.get('city', '')
         project = user_data.get('project', '')
         show_datetime = user_data.get('show_datetime', '')
@@ -241,7 +242,14 @@ class AmoCRM:
             parts.append(date_str)
         
         lead_name = ', '.join(parts) if parts else 'Заявка'
-        lead_name += '. Квиз 3 - скидка 300 рублей'
+        
+        # Разные форматы для разных CRM
+        if is_city1:
+            # АТЛАНТ: "Квиз 3 - скидка 300 рублей"
+            lead_name += '. Квиз 3 - скидка 300 рублей'
+        else:
+            # ЭТАЖИ: "Квиз 1 - скидка 300"
+            lead_name += '. Квиз 1 - скидка 300'
         
         logger.debug(f"Сформировано название сделки: {lead_name}")
         
@@ -274,10 +282,29 @@ class AmoCRM:
             
             logger.debug(f"Создание сделки для АТЛАНТ: Pipeline ID: {pipeline_id}, Status ID: {status_id or 'по умолчанию'}")
         else:
-            # Для ЭТАЖИ используем дефолтную воронку или другую
-            pipeline_id = None  # Используется дефолтная воронка
+            # Для ЭТАЖИ используем воронку 6497210
+            pipeline_id = 6497210
+            # Получаем статус "принято в работу" для ЭТАЖИ
             status_id = None
-            logger.debug(f"Создание сделки для ЭТАЖИ: используется дефолтная воронка")
+            try:
+                pipeline_data = await self.get_pipeline_statuses(pipeline_id)
+                if pipeline_data:
+                    statuses = pipeline_data.get('_embedded', {}).get('statuses', [])
+                    for status in statuses:
+                        status_name = status.get('name', '').lower()
+                        if 'принято' in status_name and 'работ' in status_name:
+                            status_id = status.get('id')
+                            logger.info(f"Найден статус 'принято в работу' для ЭТАЖИ с ID: {status_id}")
+                            break
+                    if not status_id and statuses:
+                        # Если не нашли, используем первый статус воронки
+                        first_status = statuses[0]
+                        status_id = first_status.get('id')
+                        logger.info(f"Используется первый статус воронки ЭТАЖИ с ID: {status_id}")
+            except Exception as e:
+                logger.warning(f"Не удалось получить статус воронки ЭТАЖИ: {e}. Сделка будет создана со статусом по умолчанию")
+            
+            logger.debug(f"Создание сделки для ЭТАЖИ: Pipeline ID: {pipeline_id}, Status ID: {status_id or 'по умолчанию'}")
         
         lead_data = {
             "name": lead_name,
@@ -296,17 +323,17 @@ class AmoCRM:
         # Добавляем кастомные поля
         custom_fields = []
 
-        # Для АТЛАНТ обязательно добавляем Мероприятие и дату мероприятия
+        # Для АТЛАНТ и ЭТАЖИ добавляем Мероприятие и дату мероприятия
         if is_city1:
-            # Поле "Мероприятие" (project)
+            # Поле "Мероприятие" (project) для АТЛАНТ
             if user_data.get('project'):
                 custom_fields.append({
                     "field_id": 741577,  # ID поля "Мероприятие" в АТЛАНТ
                     "values": [{"value": user_data['project']}]
                 })
-                logger.debug(f"Добавлено поле 'Мероприятие': {user_data['project']}")
+                logger.debug(f"Добавлено поле 'Мероприятие' для АТЛАНТ: {user_data['project']}")
 
-            # Поле "дата мероприятия" (show_datetime)
+            # Поле "дата мероприятия" (show_datetime) для АТЛАНТ
             if user_data.get('show_datetime'):
                 # Преобразуем дату в ISO формат (Y-m-d\TH:i:sP)
                 # Формат входных данных: "2026-02-13 19:00"
@@ -320,7 +347,7 @@ class AmoCRM:
                         "field_id": 634995,  # ID поля "дата мероприятия" в АТЛАНТ
                         "values": [{"value": iso_date}]
                     })
-                    logger.debug(f"Добавлено поле 'дата мероприятия': {iso_date} (преобразовано из {user_data['show_datetime']})")
+                    logger.debug(f"Добавлено поле 'дата мероприятия' для АТЛАНТ: {iso_date} (преобразовано из {user_data['show_datetime']})")
                 except ValueError as e:
                     logger.warning(f"Не удалось преобразовать дату '{user_data['show_datetime']}' в ISO формат: {e}")
                     # Пробуем отправить как есть, может быть формат уже правильный
@@ -329,18 +356,32 @@ class AmoCRM:
                         "values": [{"value": user_data['show_datetime']}]
                     })
         else:
-            # Для ЭТАЖИ используем старую логику
-            if user_data.get('project'):
-                custom_fields.append({
-                    "field_id": 123459,  # ID поля проекта (нужно заменить на реальное)
-                    "values": [{"value": user_data['project']}]
-                })
-
+            # Для ЭТАЖИ добавляем дату мероприятия
+            # Поле "Мероприятие" (838879) - это поле со списком выбора, не добавляем его
+            # так как оно требует enum_id, а не текстовое значение
+            
+            # Поле "дата мероприятия" (show_datetime)
             if user_data.get('show_datetime'):
-                custom_fields.append({
-                    "field_id": 123460,  # ID поля даты/времени спектакля (нужно заменить на реальное)
-                    "values": [{"value": user_data['show_datetime']}]
-                })
+                # Преобразуем дату в ISO формат (Y-m-d\TH:i:sP)
+                # Формат входных данных: "2026-02-13 19:00"
+                # Формат для AmoCRM: "2026-02-13T19:00:00+00:00"
+                try:
+                    # Парсим входную дату
+                    dt = datetime.strptime(user_data['show_datetime'], "%Y-%m-%d %H:%M")
+                    # Форматируем в ISO формат
+                    iso_date = dt.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+                    custom_fields.append({
+                        "field_id": 789743,  # ID поля "дата мероприятия" в ЭТАЖИ
+                        "values": [{"value": iso_date}]
+                    })
+                    logger.debug(f"Добавлено поле 'дата мероприятия' для ЭТАЖИ: {iso_date} (преобразовано из {user_data['show_datetime']})")
+                except ValueError as e:
+                    logger.warning(f"Не удалось преобразовать дату '{user_data['show_datetime']}' в ISO формат: {e}")
+                    # Пробуем отправить как есть, может быть формат уже правильный
+                    custom_fields.append({
+                        "field_id": 789743,
+                        "values": [{"value": user_data['show_datetime']}]
+                    })
 
         # Закомментировано: эти поля не существуют в AmoCRM АТЛАНТ, вызывают ошибки валидации
         # Если нужно добавить эти поля, нужно создать их в AmoCRM и указать правильные field_id
@@ -375,7 +416,6 @@ class AmoCRM:
 
         url = f"{self.base_url}/api/v4/leads"
         logger.debug(f"Отправка запроса на создание сделки в AmoCRM: {url}")
-        
         logger.debug(f"Данные сделки: {lead_data}")
         
         try:
@@ -425,7 +465,6 @@ async def create_lead_in_city(user_data: Dict, city: str, city1_config: AmoCRMCo
         telegram_username: Telegram username пользователя
     """
     city_lower = city.lower() if city else ""
-    logger.debug(f"Определение AmoCRM аккаунта для города: {city}")
     
     # Города для первой CRM (АТЛАНТ)
     city1_cities = [
@@ -433,9 +472,6 @@ async def create_lead_in_city(user_data: Dict, city: str, city1_config: AmoCRMCo
         "краснодар", "krasnodar",
         "ростов-на-дону", "ростов", "rostov", "rostov-on-don",
         "самара", "samara",
-        "сочи", "sochi",
-        "ставрополь", "stavropol",
-        "уфа", "ufa"
     ]
     
     # Города для второй CRM (ЭТАЖИ)
@@ -447,13 +483,13 @@ async def create_lead_in_city(user_data: Dict, city: str, city1_config: AmoCRMCo
         "красноярск", "krasnoyarsk",
         "липецк", "lipetsk",
         "минск", "minsk",
-        "набережные челны", "набережные", "naberezhnye", "chelny",
-        "нижний новгород", "нижний", "nizhny", "novgorod", "nizhny-novgorod",
+        "набережные челны", "naberezhnye chelny",
+        "нижний новгород", "nizhny novgorod", "nizhny-novgorod",
         "новосибирск", "novosibirsk",
         "омск", "omsk",
         "тамбов", "tambov",
         "тюмень", "tyumen",
-        "челябинск", "chelyabinsk"
+        "челябинск", "chelyabinsk",
     ]
     
     # Определяем, какой CRM использовать
@@ -479,11 +515,13 @@ async def create_lead_in_city(user_data: Dict, city: str, city1_config: AmoCRMCo
     if telegram_username:
         user_data_with_telegram['telegram_username'] = telegram_username
     
-    # Сначала создаем контакт
-    # Контакт создается с Именем (name), Телефоном (phone), Email (email) - это уже реализовано в create_contact
+    # Создаем контакт
     contact_id = await amocrm.create_contact(user_data_with_telegram)
     
-    # Затем создаем сделку и привязываем к контакту
+    if not contact_id:
+        logger.error("Не удалось создать контакт в AmoCRM")
+        return None
+    
     # Передаем is_city1 для правильной настройки сделки
     lead_result = await amocrm.create_lead(user_data_with_telegram, contact_id, is_city1=is_city1)
     
