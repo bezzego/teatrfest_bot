@@ -39,13 +39,18 @@ async def how_to_apply_promo(callback: CallbackQuery, db: Database, config: Conf
         f"На видео короткая мини-инструкция для вашего удобства ❤️"
     )
     
-    # File ID видео с инструкцией
-    VIDEO_FILE_ID = "BAACAgIAAxkBAAIBCWlS9KD9vNnUQPdneaUuCashDY-pAALEkQACUfeZSoc6rALIDnrtNgQ"
+    # File ID видео с инструкцией из конфига
+    video_file_id = config.promo_video_file_id
+    if not video_file_id:
+        logger.warning("PROMO_VIDEO_FILE_ID не задан в .env, видео не будет отправлено")
+        await callback.message.answer(text, parse_mode="HTML")
+        await callback.answer()
+        return
     
     try:
         # Отправляем видео с подписью
         await callback.message.answer_video(
-            video=VIDEO_FILE_ID,
+            video=video_file_id,
             caption=text,
             parse_mode="HTML"
         )

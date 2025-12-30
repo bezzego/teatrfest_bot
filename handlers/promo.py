@@ -8,9 +8,6 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
-# File ID изображения промокода (получается через скрипт scripts/get_file_id.py)
-# Если file_id не задан, будет использоваться локальный файл
-PROMO_IMAGE_FILE_ID = "AgACAgIAAxkBAAIFWmlTAAFssQWTx3z6ZUQpooNQWLx_MwACJQ9rGxaBmUq1OZLUiteSCAEAAwIAA3cAAzYE"  # Замените на file_id после запуска скрипта get_file_id.py
 # Путь к изображению промокода (fallback, если file_id не задан)
 PROMO_IMAGE_PATH = Path(__file__).parent.parent / "images" / "promo_banner.jpg"
 
@@ -55,11 +52,12 @@ async def send_promo_code(message_or_call, db: Database, user_id: int, promo_cod
     # Пытаемся отправить с изображением
     if send_target:
         try:
-            # Приоритет: используем file_id, если он задан (быстрее и не требует загрузки)
-            if PROMO_IMAGE_FILE_ID:
-                logger.debug(f"Использование file_id для изображения промокода: {PROMO_IMAGE_FILE_ID}")
+            # Приоритет: используем file_id из конфига, если он задан (быстрее и не требует загрузки)
+            promo_image_file_id = config.promo_image_file_id
+            if promo_image_file_id:
+                logger.debug(f"Использование file_id для изображения промокода: {promo_image_file_id}")
                 await send_target.answer_photo(
-                    photo=PROMO_IMAGE_FILE_ID,
+                    photo=promo_image_file_id,
                     caption=text,
                     reply_markup=keyboard,
                     parse_mode="HTML"

@@ -54,6 +54,8 @@ class Config:
     admin_ids: List[int]
     bot_username: str
     link_mappings_path: str
+    promo_image_file_id: str
+    promo_video_file_id: str
     
     @classmethod
     def load(cls) -> 'Config':
@@ -83,6 +85,8 @@ class Config:
             admin_ids=_load_admin_ids(),
             bot_username=os.getenv('BOT_USERNAME', 'theatrfest_help_bot'),
             link_mappings_path=os.getenv('LINK_MAPPINGS_PATH', './link_mappings.json'),
+            promo_image_file_id=os.getenv('PROMO_IMAGE_FILE_ID', ''),
+            promo_video_file_id=os.getenv('PROMO_VIDEO_FILE_ID', ''),
         )
         logger.debug("Конфигурация успешно загружена")
         logger.debug(f"Администраторы: {config.admin_ids}")
