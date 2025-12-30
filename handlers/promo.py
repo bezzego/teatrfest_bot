@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from aiogram.types import Message, FSInputFile, InputFile
+from aiogram.types import Message, CallbackQuery, FSInputFile, InputFile
 from database import Database
 from config import Config
 from keyboards import get_promo_keyboard
@@ -63,10 +63,16 @@ async def send_promo_code(message_or_call, db: Database, user_id: int, promo_cod
     
     # Определяем, как отправлять: через callback.message или обычное сообщение
     send_target = None
-    if hasattr(message_or_call, 'answer_photo'):
+    # Проверяем, является ли это Message объектом
+    if isinstance(message_or_call, Message):
         send_target = message_or_call
-    elif hasattr(message_or_call, 'message') and hasattr(message_or_call.message, 'answer_photo'):
+        logger.debug(f"Определен send_target как Message для пользователя {user_id}")
+    # Проверяем, является ли это CallbackQuery с message
+    elif isinstance(message_or_call, CallbackQuery) and message_or_call.message:
         send_target = message_or_call.message
+        logger.debug(f"Определен send_target как CallbackQuery.message для пользователя {user_id}")
+    else:
+        logger.warning(f"Не удалось определить send_target для типа {type(message_or_call)}")
     
     # Пытаемся отправить с изображением
     if send_target:
