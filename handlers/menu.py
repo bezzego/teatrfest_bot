@@ -19,9 +19,8 @@ async def buy_tickets_handler(message: Message, config: Config):
     user_id = message.from_user.id
     logger.info(f"Пользователь {user_id} запросил покупку билетов")
     
-    # Получаем ссылку из настроек
-    settings_service = get_bot_settings_service()
-    ticket_url = settings_service.get_ticket_url()
+    # Используем дефолтную ссылку
+    ticket_url = "https://love-teatrfest.ru/?utm_source=tg-bot"
     
     text = (
         "🎟 Купить билеты\n\n"
