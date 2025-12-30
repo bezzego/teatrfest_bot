@@ -75,6 +75,60 @@ class AmoCRM:
             logger.error(f"Исключение при получении статусов воронки: {e}", exc_info=True)
             return None
 
+    async def get_users(self) -> Optional[list]:
+        """Получить список пользователей AmoCRM
+        
+        Returns:
+            Список пользователей или None при ошибке
+        """
+        access_token = await self._get_access_token()
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+        
+        url = f"{self.base_url}/api/v4/users"
+        logger.debug(f"Запрос списка пользователей: {url}")
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        logger.debug(f"Получен список пользователей: {len(data.get('_embedded', {}).get('users', []))} пользователей")
+                        return data.get('_embedded', {}).get('users', [])
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"Ошибка получения списка пользователей: статус {response.status}, ответ: {error_text}")
+                        return None
+        except Exception as e:
+            logger.error(f"Исключение при получении списка пользователей: {e}", exc_info=True)
+            return None
+
+    async def find_user_by_name(self, name: str) -> Optional[int]:
+        """Найти пользователя по имени (частичное совпадение)
+        
+        Args:
+            name: Имя пользователя для поиска (например, "Мариненкова Екатерина")
+            
+        Returns:
+            ID пользователя или None если не найден
+        """
+        users = await self.get_users()
+        if not users:
+            return None
+        
+        name_lower = name.lower()
+        for user in users:
+            user_name = user.get('name', '')
+            if name_lower in user_name.lower() or user_name.lower() in name_lower:
+                user_id = user.get('id')
+                logger.info(f"Найден пользователь '{user_name}' с ID: {user_id}")
+                return user_id
+        
+        logger.warning(f"Пользователь с именем '{name}' не найден")
+        return None
+
     async def create_contact(self, user_data: Dict) -> Optional[int]:
         """Создать контакт в AmoCRM
         
@@ -408,11 +462,16 @@ class AmoCRM:
 
         lead_data["custom_fields_values"] = custom_fields
 
+        # Назначаем ответственного для ЭТАЖИ
+        if not is_city1 and self.config.responsible_user_id:
+            lead_data["responsible_user_id"] = self.config.responsible_user_id
+            logger.info(f"Назначен ответственный за сделку (ЭТАЖИ): user_id={self.config.responsible_user_id}")
+
         # Привязываем контакт к сделке
         if contact_id:
-            lead_data["_embedded"] = {
-                "contacts": [{"id": contact_id}]
-            }
+            if "_embedded" not in lead_data:
+                lead_data["_embedded"] = {}
+            lead_data["_embedded"]["contacts"] = [{"id": contact_id}]
 
         url = f"{self.base_url}/api/v4/leads"
         logger.debug(f"Отправка запроса на создание сделки в AmoCRM: {url}")

@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -16,6 +16,7 @@ class AmoCRMConfig:
     redirect_uri: str
     access_token: str
     refresh_token: str
+    responsible_user_id: Optional[int] = None  # ID ответственного пользователя для сделок
 
 
 def _load_admin_ids() -> List[int]:
@@ -78,6 +79,7 @@ class Config:
                 redirect_uri=os.getenv('AMOCRM_CITY2_REDIRECT_URI', ''),
                 access_token=os.getenv('AMOCRM_CITY2_ACCESS_TOKEN', ''),
                 refresh_token=os.getenv('AMOCRM_CITY2_REFRESH_TOKEN', ''),
+                responsible_user_id=int(os.getenv('AMOCRM_CITY2_RESPONSIBLE_USER_ID', '0')) if os.getenv('AMOCRM_CITY2_RESPONSIBLE_USER_ID') else None,
             ),
             ticket_url=os.getenv('TICKET_URL', 'https://your-ticket-url.com'),
             hotline_phone=os.getenv('HOTLINE_PHONE', '+7 (XXX) XXX-XX-XX'),
