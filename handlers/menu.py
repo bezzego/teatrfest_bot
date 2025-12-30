@@ -14,13 +14,42 @@ router = Router()
 
 
 @router.message(F.text == "🎟 Купить билеты")
-async def buy_tickets_handler(message: Message, config: Config):
+async def buy_tickets_handler(message: Message, db: Database, config: Config):
     """Обработчик кнопки 'Купить билеты'"""
     user_id = message.from_user.id
     logger.info(f"Пользователь {user_id} запросил покупку билетов")
     
-    # Используем дефолтную ссылку
-    ticket_url = "https://love-teatrfest.ru/?utm_source=tg-bot"
+    # Получаем ссылку на выбор мест в зависимости от города и проекта пользователя
+    default_seat_url = "https://love-teatrfest.ru/?utm_source=tg-bot"
+    seat_selection_url = default_seat_url
+    
+    user = await db.get_user(user_id)
+    if user:
+        city = user.get('city', '')
+        project = user.get('project', '')
+        
+        if city:
+            # Пытаемся найти маппинг по городу и проекту пользователя
+            all_mappings = await db.get_all_link_mappings()
+            # Сначала ищем точное совпадение по городу и проекту
+            found = False
+            if project:
+                for mapping in all_mappings:
+                    mapping_city = mapping.get('city', '').lower()
+                    mapping_project = mapping.get('project', '').lower()
+                    if mapping_city == city.lower() and mapping_project == project.lower():
+                        seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
+                        found = True
+                        logger.debug(f"Найден маппинг по городу '{city}' и проекту '{project}' для покупки билетов: {seat_selection_url}")
+                        break
+            
+            # Если не нашли по городу и проекту, ищем только по городу
+            if not found:
+                for mapping in all_mappings:
+                    if mapping.get('city', '').lower() == city.lower():
+                        seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
+                        logger.debug(f"Найден маппинг только по городу '{city}' для покупки билетов: {seat_selection_url}")
+                        break
     
     text = (
         "🎟 Купить билеты\n\n"
@@ -29,7 +58,7 @@ async def buy_tickets_handler(message: Message, config: Config):
     
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎫 Перейти к покупке билетов", url=ticket_url)]
+        [InlineKeyboardButton(text="🎫 Перейти к покупке билетов", url=seat_selection_url)]
     ])
     
     await message.answer(text, reply_markup=keyboard)
