@@ -88,18 +88,66 @@ async def how_to_apply_promo(callback: CallbackQuery, db: Database, config: Conf
 
 
 @router.callback_query(F.data == "hotline")
-async def hotline(callback: CallbackQuery, config: Config):
+async def hotline(callback: CallbackQuery, db: Database, config: Config):
     """Информация о горячей линии"""
     user_id = callback.from_user.id
     logger.debug(f"Пользователь {user_id} запросил информацию о горячей линии")
-    text = (
-        "📞 Горячая линия\n\n"
-        f"Если у вас возникли вопросы, свяжитесь с нами:\n\n"
-        f"Телефон: {config.hotline_phone}\n"
-        f"Email: {config.hotline_email}\n"
-        "Режим работы: ежедневно с 10:00 до 22:00"
-    )
     
-    await callback.message.answer(text)
+    # Получаем город пользователя из БД
+    user = await db.get_user(user_id)
+    city = user.get('city', '') if user else ''
+    
+    # Определяем телефон по городу (используем функцию из handlers/menu.py)
+    from handlers.menu import get_phone_by_city
+    hotline_phone = get_phone_by_city(city)
+    logger.debug(f"Определен телефон для горячей линии города '{city}': {hotline_phone}")
+    
+    # Получаем текст контактов из настроек
+    settings_service = get_bot_settings_service()
+    contacts_text = settings_service.get_contacts_text()
+    
+    if not contacts_text:
+        # Fallback на дефолтный текст, если настройки не заданы
+        contacts_text = (
+            "☎️ Контакты и ссылки на соц.сети\n\n"
+            f"📞 <b>Горячая линия:</b>\n"
+            f"Телефон: {hotline_phone}\n"
+            f"Режим работы: ежедневно с 10:00 до 19:00\n\n"
+            "🌐 <b>Наш сайт:</b>\n"
+            "love-teatrfest.ru\n\n"
+            "📱 <b>Мы в социальных сетях:</b>\n"
+            "Следите за новостями и анонсами спектаклей в наших социальных сетях."
+        )
+    else:
+        # Заменяем телефон в тексте на правильный для города пользователя
+        # Заменяем оба возможных телефона на нужный
+        contacts_text = contacts_text.replace("8 (800) 505-51-49", hotline_phone)
+        contacts_text = contacts_text.replace("8 (800) 555-48-52", hotline_phone)
+        # Также заменяем телефон из config, если он там есть
+        if config.hotline_phone:
+            contacts_text = contacts_text.replace(config.hotline_phone, hotline_phone)
+    
+    # Убираем Email из текста, если он там есть
+    import re
+    # Удаляем строки с Email (различные варианты написания)
+    contacts_text = re.sub(r'.*[Ee]mail[:\s]*[^\n]*\n?', '', contacts_text)
+    contacts_text = re.sub(r'.*[Ээ]лектронная почта[:\s]*[^\n]*\n?', '', contacts_text)
+    contacts_text = re.sub(r'.*[Пп]очта[:\s]*[^\n]*\n?', '', contacts_text)
+    # Убираем лишние пустые строки
+    contacts_text = re.sub(r'\n{3,}', '\n\n', contacts_text)
+    
+    # Создаем клавиатуру с кнопками для социальных сетей
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    keyboard_buttons = [
+        [InlineKeyboardButton(text="📱 ТГ-канал", url="https://t.me/teatrfestru")],
+        [InlineKeyboardButton(text="📘 Вконтакте", url="https://vk.com/teatrfestru")],
+        [InlineKeyboardButton(text="📷 Инстаграм", url="https://www.instagram.com/teatrfest.ru")],
+        [InlineKeyboardButton(text="▶️ Ютуб", url="https://www.youtube.com/@teatrfestru")],
+        [InlineKeyboardButton(text="🎙 Подкасты", url="https://teatrfest.mave.digital")],
+    ]
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+    
+    await callback.message.answer(contacts_text, reply_markup=keyboard, parse_mode="HTML")
     await callback.answer()
 
