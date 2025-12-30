@@ -120,12 +120,12 @@ async def how_to_apply_promo_handler(message: Message, db: Database, config: Con
                     seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
                     break
     
-    # Формируем текст инструкции
+    # Формируем текст инструкции с динамической ссылкой
     text = (
         f"🎫 <b>Инструкция по применению промокода:</b>\n\n"
         f"Ваш промокод: <code>{promo_code}</code>\n\n"
         f"—> Перейдите к покупке билетов\n"
-        f"https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=80&unifd-refer=tg-bot\n"
+        f"{seat_selection_url}\n"
         f"—> Выберите места\n"
         f"—> Перейдите к оформлению билетов\n"
         f"—> Введите промокод {promo_code} в поле «Промокод»\n"
