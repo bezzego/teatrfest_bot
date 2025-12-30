@@ -61,12 +61,37 @@ async def my_promo_code_handler(message: Message, db: Database, config: Config):
     
     project = user.get('project', 'Спектакль')
     
-    # Используем фиксированную ссылку для кнопки "Купить билеты" в промокоде
-    ticket_url = "https://love-teatrfest.ru/?utm_source=tg-bot"
+    # Получаем ссылку на выбор мест в зависимости от города и проекта пользователя
+    default_seat_url = "https://love-teatrfest.ru/?utm_source=tg-bot"
+    seat_selection_url = default_seat_url
+    
+    city = user.get('city', '')
+    if city:
+        # Пытаемся найти маппинг по городу и проекту пользователя
+        all_mappings = await db.get_all_link_mappings()
+        # Сначала ищем точное совпадение по городу и проекту
+        found = False
+        if project:
+            for mapping in all_mappings:
+                mapping_city = mapping.get('city', '').lower()
+                mapping_project = mapping.get('project', '').lower()
+                if mapping_city == city.lower() and mapping_project == project.lower():
+                    seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
+                    found = True
+                    logger.debug(f"Найден маппинг по городу '{city}' и проекту '{project}' для промокода: {seat_selection_url}")
+                    break
+        
+        # Если не нашли по городу и проекту, ищем только по городу
+        if not found:
+            for mapping in all_mappings:
+                if mapping.get('city', '').lower() == city.lower():
+                    seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
+                    logger.debug(f"Найден маппинг только по городу '{city}' для промокода: {seat_selection_url}")
+                    break
     
     # Используем функцию send_promo_code для отправки промокода с изображением
     from handlers.promo import send_promo_code
-    await send_promo_code(message, db, user_id, promo_code, project, config, ticket_url)
+    await send_promo_code(message, db, user_id, promo_code, project, config, seat_selection_url)
 
 
 @router.message(F.text == "🌐 Расписание спектаклей")
