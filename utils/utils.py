@@ -139,3 +139,49 @@ def validate_email(email: str) -> bool:
         return False
     return len(email) > 3
 
+
+def format_datetime_readable(datetime_str: str) -> str:
+    """Форматирует дату/время в читаемый формат с русскими названиями месяцев
+    
+    Args:
+        datetime_str: Дата в формате "2026-02-13 19:00" или "2026-02-13"
+        
+    Returns:
+        Отформатированная дата в формате "13 февраля 2026 19:00" или "13 февраля 2026"
+    """
+    if not datetime_str:
+        return ""
+    
+    # Русские названия месяцев
+    months = [
+        "января", "февраля", "марта", "апреля", "мая", "июня",
+        "июля", "августа", "сентября", "октября", "ноября", "декабря"
+    ]
+    
+    try:
+        from datetime import datetime
+        
+        # Пробуем парсить формат "2026-02-13 19:00"
+        try:
+            dt = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M")
+            day = dt.day
+            month_name = months[dt.month - 1]
+            year = dt.year
+            time_str = dt.strftime("%H:%M")
+            return f"{day} {month_name} {year} {time_str}"
+        except ValueError:
+            # Пробуем формат "2026-02-13" (без времени)
+            try:
+                dt = datetime.strptime(datetime_str, "%Y-%m-%d")
+                day = dt.day
+                month_name = months[dt.month - 1]
+                year = dt.year
+                return f"{day} {month_name} {year}"
+            except ValueError:
+                # Если не удалось распарсить, возвращаем как есть
+                logger.warning(f"Не удалось распарсить дату '{datetime_str}', возвращаем как есть")
+                return datetime_str
+    except Exception as e:
+        logger.error(f"Ошибка при форматировании даты '{datetime_str}': {e}")
+        return datetime_str
+

@@ -131,13 +131,15 @@ async def view_mapping_callback(callback: CallbackQuery, db: Database, config: C
     # Формируем ссылку на бота с этим slug
     bot_link = f"https://t.me/{config.bot_username}?start={slug}"
     
+    from utils.utils import format_datetime_readable
+    formatted_datetime = format_datetime_readable(mapping['show_datetime']) if mapping.get('show_datetime') else 'Не указана'
     text = (
         f"📋 Детали маппинга\n\n"
         f"🔗 Slug: <code>{mapping['slug']}</code>\n"
         f"🤖 Ссылка на бота: <code>{bot_link}</code>\n"
         f"🏙️ Город: {mapping['city']}\n"
         f"🎭 Проект: {mapping['project']}\n"
-        f"📅 Дата/время: {mapping['show_datetime']}\n"
+        f"📅 Дата/время: {formatted_datetime}\n"
         f"🎫 Ссылка на билеты: {mapping.get('ticket_url', 'Не указана')}\n"
         f"🏢 CRM: {mapping.get('crm_type', 'auto')}\n"
         f"📝 Создан: {mapping.get('created_at', 'N/A')}\n"
@@ -352,12 +354,14 @@ async def process_ticket_url(message: Message, state: FSMContext, db: Database, 
         action = "обновлен" if 'editing_slug' in data else "создан"
         logger.info(f"Администратор {user_id} {action} маппинг: {slug}")
         
+        from utils.utils import format_datetime_readable
+        formatted_datetime = format_datetime_readable(data['show_datetime']) if data.get('show_datetime') else 'Не указана'
         text = (
             f"✅ Маппинг успешно {action}!\n\n"
             f"🔗 Slug: <code>{slug}</code>\n"
             f"🏙️ Город: {data['city']}\n"
             f"🎭 Проект: {data['project']}\n"
-            f"📅 Дата/время: {data['show_datetime']}\n"
+            f"📅 Дата/время: {formatted_datetime}\n"
             f"🎫 Ссылка: {ticket_url or 'Не указана'}"
         )
         
@@ -619,12 +623,14 @@ async def edit_mapping_callback(callback: CallbackQuery, state: FSMContext, db: 
     await state.update_data(editing_slug=slug)
     await state.set_state(AdminStates.waiting_for_city)
     
+    from utils.utils import format_datetime_readable
+    formatted_datetime = format_datetime_readable(mapping['show_datetime']) if mapping.get('show_datetime') else 'Не указана'
     text = (
         f"✏️ Редактирование маппинга: <code>{slug}</code>\n\n"
         f"Текущие данные:\n"
         f"🏙️ Город: {mapping['city']}\n"
         f"🎭 Проект: {mapping['project']}\n"
-        f"📅 Дата/время: {mapping['show_datetime']}\n"
+        f"📅 Дата/время: {formatted_datetime}\n"
         f"🎫 Ссылка: {mapping.get('ticket_url', 'Не указана')}\n\n"
         f"Введите новый город (или текущий для сохранения):"
     )

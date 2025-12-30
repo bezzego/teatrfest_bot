@@ -19,7 +19,7 @@ def get_main_menu_keyboard(user_id: int = None, config: Config = None) -> ReplyK
     keyboard_rows.extend([
         [
             KeyboardButton(text="🎟 Купить билеты"),
-            KeyboardButton(text="🧾 Мой промокод")
+            KeyboardButton(text="🎁 Мой промокод")
         ],
         [
             KeyboardButton(text="🌐 Расписание спектаклей"),

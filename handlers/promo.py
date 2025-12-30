@@ -29,15 +29,34 @@ async def send_promo_code(message_or_call, db: Database, user_id: int, promo_cod
     name = user.get('name', '') if user else ''
     logger.debug(f"Имя пользователя {user_id}: {name}")
     
+    # Получаем город и дату/время из данных пользователя
+    city = user.get('city', '') if user else ''
+    show_datetime = user.get('show_datetime', '') if user else ''
+    
+    # Форматируем дату в читаемый формат (если есть)
+    from utils.utils import format_datetime_readable
+    formatted_date = format_datetime_readable(show_datetime) if show_datetime else ''
+    
     # Используем переданный ticket_url или из config
     final_ticket_url = ticket_url or config.ticket_url
     logger.debug(f"Используется ticket_url: {final_ticket_url}")
     
+    # Формируем текст с информацией о городе и дате
+    # Используем имя пользователя или "ваш" если имя не указано
+    name_part = f"{name}, " if name else ""
     text = (
-        f"Спасибо, {name}! Вы готовы.\n\n"
-        f"Ваша персональная скидка на спектакль «{project_name}»\n\n"
-        f"Промокод: <code>{promo_code}</code>\n\n"
-        f"Примените его при покупке билетов, чтобы получить скидку."
+        f"{name_part}вот ваш промокод на спектакль «{project_name}» 🎁\n\n"
+        f"Промокод: <code>{promo_code}</code>\n"
+    )
+    
+    # Добавляем город и дату, если они есть
+    if city:
+        text += f"\n🏙️ Город: {city}"
+    if formatted_date:
+        text += f"\n📅 Дата и время: {formatted_date}"
+    
+    text += (
+        f"\n\nПримените его при покупке билетов, чтобы получить скидку."
     )
     
     keyboard = get_promo_keyboard(final_ticket_url)

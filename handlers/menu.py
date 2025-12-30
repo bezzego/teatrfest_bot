@@ -35,7 +35,7 @@ async def buy_tickets_handler(message: Message, config: Config):
     await message.answer(text, reply_markup=keyboard)
 
 
-@router.message(F.text == "🧾 Мой промокод")
+@router.message(F.text == "🎁 Мой промокод")
 async def my_promo_code_handler(message: Message, db: Database, config: Config):
     """Обработчик кнопки 'Мой промокод'"""
     user_id = message.from_user.id
@@ -59,22 +59,14 @@ async def my_promo_code_handler(message: Message, db: Database, config: Config):
         logger.debug(f"Пользователь {user_id} не имеет промокода в БД, используется общий: {promo_code}")
     
     project = user.get('project', 'Спектакль')
-    name = user.get('name', '')
-    
-    text = (
-        f"🧾 Ваш промокод\n\n"
-        f"Спасибо, {name}!\n\n"
-        f"Ваша персональная скидка на спектакль «{project}»\n\n"
-        f"Промокод: <code>{promo_code}</code>\n\n"
-        f"Примените его при покупке билетов, чтобы получить скидку."
-    )
     
     # Получаем ссылку из настроек
     settings_service = get_bot_settings_service()
     ticket_url = settings_service.get_ticket_url()
     
-    from keyboards.inline import get_promo_keyboard
-    await message.answer(text, reply_markup=get_promo_keyboard(ticket_url), parse_mode="HTML")
+    # Используем функцию send_promo_code для отправки промокода с изображением
+    from handlers.promo import send_promo_code
+    await send_promo_code(message, db, user_id, promo_code, project, config, ticket_url)
 
 
 @router.message(F.text == "🌐 Расписание спектаклей")
@@ -114,23 +106,47 @@ async def how_to_apply_promo_handler(message: Message, db: Database, config: Con
         settings_service = get_bot_settings_service()
         promo_code = settings_service.get_promo_code()
     
+    # Получаем ссылку на выбор мест в зависимости от города пользователя
+    default_seat_url = "https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=80&unifd-refer=tg-bot"
+    seat_selection_url = default_seat_url
+    
+    if user:
+        city = user.get('city', '')
+        if city:
+            # Пытаемся найти маппинг по городу пользователя
+            all_mappings = await db.get_all_link_mappings()
+            for mapping in all_mappings:
+                if mapping.get('city', '').lower() == city.lower():
+                    seat_selection_url = mapping.get('seat_selection_url') or mapping.get('ticket_url') or default_seat_url
+                    break
+    
     # Формируем текст инструкции
     text = (
         f"🎫 <b>Инструкция по применению промокода:</b>\n\n"
         f"Ваш промокод: <code>{promo_code}</code>\n\n"
         f"—> Перейдите к покупке билетов\n"
+        f"https://teatrfest2.edinoepole.ru/api/v1/pages/default_landing_page?unifd-date=&unifd-event-id=80&unifd-refer=tg-bot\n"
         f"—> Выберите места\n"
         f"—> Перейдите к оформлению билетов\n"
-        f"—> Введите промокод <code>{promo_code}</code> в поле «Промокод»\n"
+        f"—> Введите промокод {promo_code} в поле «Промокод»\n"
         f"—> Нажмите «Оплатить или забронировать» и скидка автоматически применится на весь заказ\n\n"
         f"На видео короткая мини-инструкция для вашего удобства ❤️"
     )
+    
+    # Создаем клавиатуру с кнопкой "Перейти к выбору мест"
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(
+            text="Перейти к выбору мест",
+            url=seat_selection_url
+        )
+    ]])
     
     # File ID видео с инструкцией из конфига
     video_file_id = config.promo_video_file_id
     if not video_file_id:
         logger.warning("PROMO_VIDEO_FILE_ID не задан в .env, видео не будет отправлено")
-        await message.answer(text, parse_mode="HTML")
+        await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
         return
     
     try:
@@ -138,12 +154,13 @@ async def how_to_apply_promo_handler(message: Message, db: Database, config: Con
         await message.answer_video(
             video=video_file_id,
             caption=text,
+            reply_markup=keyboard,
             parse_mode="HTML"
         )
     except Exception as e:
         logger.error(f"Ошибка при отправке видео инструкции: {e}", exc_info=True)
         # Fallback: отправляем только текст
-        await message.answer(text, parse_mode="HTML")
+        await message.answer(text, reply_markup=keyboard, parse_mode="HTML")
 
 
 @router.message(F.text == "🤔 Частые вопросы зрителей")
@@ -304,11 +321,10 @@ async def contacts_handler(message: Message, db: Database, config: Config):
     if not contacts_text:
         # Fallback на дефолтный текст, если настройки не заданы
         contacts_text = (
-            "☎️ Контакты и ссылки\n\n"
+            "☎️ Контакты и ссылки на соц.сети\n\n"
             f"📞 <b>Горячая линия:</b>\n"
             f"Телефон: {hotline_phone}\n"
-            f"Email: {config.hotline_email}\n"
-            f"Режим работы: ежедневно с 10:00 до 22:00\n\n"
+            f"Режим работы: ежедневно с 10:00 до 19:00\n\n"
             "🌐 <b>Наш сайт:</b>\n"
             "love-teatrfest.ru\n\n"
             "📱 <b>Мы в социальных сетях:</b>\n"
@@ -323,14 +339,15 @@ async def contacts_handler(message: Message, db: Database, config: Config):
         if config.hotline_phone:
             contacts_text = contacts_text.replace(config.hotline_phone, hotline_phone)
     
-    # Можно добавить кнопки с ссылками на соц. сети, если они есть в конфиге
+    # Создаем клавиатуру с кнопками для социальных сетей
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-    keyboard_buttons = []
-    
-    # Добавляем кнопку на сайт
-    keyboard_buttons.append([
-        InlineKeyboardButton(text="🌐 Наш сайт", url="https://love-teatrfest.ru")
-    ])
+    keyboard_buttons = [
+        [InlineKeyboardButton(text="📱 ТГ-канал", url="https://t.me/teatrfestru")],
+        [InlineKeyboardButton(text="📘 Вконтакте", url="https://vk.com/teatrfestru")],
+        [InlineKeyboardButton(text="📷 Инстаграм", url="https://www.instagram.com/teatrfest.ru")],
+        [InlineKeyboardButton(text="▶️ Ютуб", url="https://www.youtube.com/@teatrfestru")],
+        [InlineKeyboardButton(text="🎙 Подкасты", url="https://teatrfest.mave.digital")],
+    ]
     
     keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
     
