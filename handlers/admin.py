@@ -15,7 +15,8 @@ from keyboards.admin import (
     get_mapping_actions_keyboard,
     get_confirm_delete_keyboard,
     get_settings_menu_keyboard,
-    get_back_to_settings_keyboard
+    get_back_to_settings_keyboard,
+    get_statistics_menu_keyboard
 )
 from logger import get_logger
 
@@ -636,4 +637,208 @@ async def edit_mapping_callback(callback: CallbackQuery, state: FSMContext, db: 
     )
     await callback.message.edit_text(text, parse_mode="HTML")
     await callback.answer()
+
+
+@router.callback_query(F.data == "admin_statistics")
+async def admin_statistics_callback(callback: CallbackQuery, config: Config):
+    """Меню статистики"""
+    user_id = callback.from_user.id
+    
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+    
+    logger.info(f"Администратор {user_id} открыл меню статистики")
+    text = (
+        "📊 Статистика бота\n\n"
+        "Выберите раздел статистики:"
+    )
+    await callback.message.edit_text(text, reply_markup=get_statistics_menu_keyboard())
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_stats_overview")
+async def admin_stats_overview_callback(callback: CallbackQuery, db: Database, config: Config):
+    """Общая статистика"""
+    user_id = callback.from_user.id
+    
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+    
+    logger.info(f"Администратор {user_id} запросил общую статистику")
+    
+    try:
+        stats = await db.get_users_by_stage()
+        total = stats.get('total', 0)
+        
+        text = (
+            f"📈 <b>Общая статистика бота</b>\n\n"
+            f"👥 <b>Всего пользователей:</b> {total}\n\n"
+            f"<b>По этапам заполнения:</b>\n"
+            f"✅ Начали анкету: {stats.get('started_questionnaire', 0)}\n"
+            f"✍️ Заполнили имя: {stats.get('filled_name', 0)}\n"
+            f"👤 Указали пол: {stats.get('filled_gender', 0)}\n"
+            f"🎭 Выбрали жанры: {stats.get('selected_genres', 0)}\n"
+            f"📝 Указали сценарий: {stats.get('filled_scenario', 0)}\n"
+            f"🎂 Указали день рождения: {stats.get('filled_birthday', 0)}\n"
+            f"📞 Указали телефон: {stats.get('filled_phone', 0)}\n"
+            f"📧 Указали email: {stats.get('filled_email', 0)}\n"
+            f"✅ Подтвердили email: {stats.get('confirmed_email', 0)}\n"
+            f"🎁 Получили промокод: {stats.get('got_promo', 0)}\n\n"
+            f"<b>Конверсия:</b>\n"
+        )
+        
+        if total > 0:
+            confirmed = stats.get('confirmed_email', 0)
+            promo = stats.get('got_promo', 0)
+            text += (
+                f"📧 Email подтвержден: {confirmed} ({round((confirmed/total)*100, 2)}%)\n"
+                f"🎁 Промокод получен: {promo} ({round((promo/total)*100, 2)}%)\n"
+            )
+        
+        await callback.message.edit_text(text, reply_markup=get_statistics_menu_keyboard(), parse_mode="HTML")
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Ошибка при получении общей статистики: {e}", exc_info=True)
+        await callback.answer("❌ Ошибка при получении статистики", show_alert=True)
+
+
+@router.callback_query(F.data == "admin_stats_funnel")
+async def admin_stats_funnel_callback(callback: CallbackQuery, db: Database, config: Config):
+    """Воронка конверсии"""
+    user_id = callback.from_user.id
+    
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+    
+    logger.info(f"Администратор {user_id} запросил воронку конверсии")
+    
+    try:
+        funnel = await db.get_conversion_funnel()
+        total = funnel.get('total', 0)
+        
+        if total == 0:
+            text = "📊 Воронка конверсии\n\nНет данных для отображения."
+        else:
+            text = (
+                f"🔄 <b>Воронка конверсии</b>\n\n"
+                f"👥 Всего пользователей: <b>{total}</b>\n\n"
+                f"<b>Этапы:</b>\n"
+                f"1️⃣ Начали анкету: {funnel['started_questionnaire']['count']} ({funnel['started_questionnaire']['percentage']}%)\n"
+                f"2️⃣ Заполнили имя: {funnel['filled_name']['count']} ({funnel['filled_name']['percentage']}%)\n"
+                f"3️⃣ Указали пол: {funnel['filled_gender']['count']} ({funnel['filled_gender']['percentage']}%)\n"
+                f"4️⃣ Выбрали жанры: {funnel['selected_genres']['count']} ({funnel['selected_genres']['percentage']}%)\n"
+                f"5️⃣ Указали сценарий: {funnel['filled_scenario']['count']} ({funnel['filled_scenario']['percentage']}%)\n"
+                f"6️⃣ Указали день рождения: {funnel['filled_birthday']['count']} ({funnel['filled_birthday']['percentage']}%)\n"
+                f"7️⃣ Указали телефон: {funnel['filled_phone']['count']} ({funnel['filled_phone']['percentage']}%)\n"
+                f"8️⃣ Указали email: {funnel['filled_email']['count']} ({funnel['filled_email']['percentage']}%)\n"
+                f"9️⃣ Подтвердили email: {funnel['confirmed_email']['count']} ({funnel['confirmed_email']['percentage']}%)\n"
+                f"🔟 Получили промокод: {funnel['got_promo']['count']} ({funnel['got_promo']['percentage']}%)\n"
+            )
+        
+        await callback.message.edit_text(text, reply_markup=get_statistics_menu_keyboard(), parse_mode="HTML")
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Ошибка при получении воронки конверсии: {e}", exc_info=True)
+        await callback.answer("❌ Ошибка при получении статистики", show_alert=True)
+
+
+@router.callback_query(F.data == "admin_stats_cities")
+async def admin_stats_cities_callback(callback: CallbackQuery, db: Database, config: Config):
+    """Статистика по городам"""
+    user_id = callback.from_user.id
+    
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+    
+    logger.info(f"Администратор {user_id} запросил статистику по городам")
+    
+    try:
+        cities = await db.get_users_by_city()
+        total = sum(cities.values())
+        
+        if not cities:
+            text = "🏙️ <b>Статистика по городам</b>\n\nНет данных."
+        else:
+            text = f"🏙️ <b>Статистика по городам</b>\n\nВсего: {total}\n\n"
+            sorted_cities = sorted(cities.items(), key=lambda x: x[1], reverse=True)
+            for city, count in sorted_cities[:20]:  # Показываем топ-20
+                percentage = round((count / total) * 100, 2) if total > 0 else 0
+                text += f"📍 {city}: {count} ({percentage}%)\n"
+            
+            if len(sorted_cities) > 20:
+                text += f"\n... и еще {len(sorted_cities) - 20} городов"
+        
+        await callback.message.edit_text(text, reply_markup=get_statistics_menu_keyboard(), parse_mode="HTML")
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Ошибка при получении статистики по городам: {e}", exc_info=True)
+        await callback.answer("❌ Ошибка при получении статистики", show_alert=True)
+
+
+@router.callback_query(F.data == "admin_stats_projects")
+async def admin_stats_projects_callback(callback: CallbackQuery, db: Database, config: Config):
+    """Статистика по проектам"""
+    user_id = callback.from_user.id
+    
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+    
+    logger.info(f"Администратор {user_id} запросил статистику по проектам")
+    
+    try:
+        projects = await db.get_users_by_project()
+        total = sum(projects.values())
+        
+        if not projects:
+            text = "🎭 <b>Статистика по проектам</b>\n\nНет данных."
+        else:
+            text = f"🎭 <b>Статистика по проектам</b>\n\nВсего: {total}\n\n"
+            sorted_projects = sorted(projects.items(), key=lambda x: x[1], reverse=True)
+            for project, count in sorted_projects:
+                percentage = round((count / total) * 100, 2) if total > 0 else 0
+                # Обрезаем длинные названия проектов
+                project_name = project[:40] + "..." if len(project) > 40 else project
+                text += f"🎬 {project_name}: {count} ({percentage}%)\n"
+        
+        await callback.message.edit_text(text, reply_markup=get_statistics_menu_keyboard(), parse_mode="HTML")
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Ошибка при получении статистики по проектам: {e}", exc_info=True)
+        await callback.answer("❌ Ошибка при получении статистики", show_alert=True)
+
+
+@router.callback_query(F.data == "admin_stats_utm")
+async def admin_stats_utm_callback(callback: CallbackQuery, db: Database, config: Config):
+    """Статистика по источникам (UTM)"""
+    user_id = callback.from_user.id
+    
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+    
+    logger.info(f"Администратор {user_id} запросил статистику по UTM")
+    
+    try:
+        utm_sources = await db.get_users_by_utm_source()
+        total = sum(utm_sources.values())
+        
+        if not utm_sources:
+            text = "📊 <b>Статистика по источникам (UTM)</b>\n\nНет данных."
+        else:
+            text = f"📊 <b>Статистика по источникам (UTM)</b>\n\nВсего: {total}\n\n"
+            sorted_sources = sorted(utm_sources.items(), key=lambda x: x[1], reverse=True)
+            for source, count in sorted_sources:
+                percentage = round((count / total) * 100, 2) if total > 0 else 0
+                text += f"🔗 {source}: {count} ({percentage}%)\n"
+        
+        await callback.message.edit_text(text, reply_markup=get_statistics_menu_keyboard(), parse_mode="HTML")
+        await callback.answer()
+    except Exception as e:
+        logger.error(f"Ошибка при получении статистики по UTM: {e}", exc_info=True)
+        await callback.answer("❌ Ошибка при получении статистики", show_alert=True)
 

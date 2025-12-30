@@ -301,3 +301,155 @@ class Database:
                 )
                 await db.commit()
                 logger.debug(f"Контакты пользователя {user_id} обновлены в БД")
+
+    # Методы для статистики
+    async def get_total_users_count(self) -> int:
+        """Получить общее количество пользователей"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("SELECT COUNT(*) FROM users") as cursor:
+                result = await cursor.fetchone()
+                return result[0] if result else 0
+
+    async def get_users_by_stage(self) -> dict:
+        """Получить статистику пользователей по этапам"""
+        async with aiosqlite.connect(self.db_path) as db:
+            stats = {}
+            
+            # Всего зашло
+            async with db.execute("SELECT COUNT(*) FROM users") as cursor:
+                stats['total'] = (await cursor.fetchone())[0]
+            
+            # Начали анкету (есть consent)
+            async with db.execute("SELECT COUNT(*) FROM users WHERE consent = 1") as cursor:
+                stats['started_questionnaire'] = (await cursor.fetchone())[0]
+            
+            # Заполнили имя
+            async with db.execute("SELECT COUNT(*) FROM users WHERE name IS NOT NULL AND name != ''") as cursor:
+                stats['filled_name'] = (await cursor.fetchone())[0]
+            
+            # Заполнили пол
+            async with db.execute("SELECT COUNT(*) FROM users WHERE gender IS NOT NULL AND gender != ''") as cursor:
+                stats['filled_gender'] = (await cursor.fetchone())[0]
+            
+            # Выбрали жанры
+            async with db.execute("SELECT COUNT(DISTINCT user_id) FROM user_genres") as cursor:
+                stats['selected_genres'] = (await cursor.fetchone())[0]
+            
+            # Заполнили сценарий
+            async with db.execute("SELECT COUNT(*) FROM users WHERE scenario IS NOT NULL AND scenario != ''") as cursor:
+                stats['filled_scenario'] = (await cursor.fetchone())[0]
+            
+            # Заполнили день рождения
+            async with db.execute("SELECT COUNT(*) FROM users WHERE birthday IS NOT NULL AND birthday != ''") as cursor:
+                stats['filled_birthday'] = (await cursor.fetchone())[0]
+            
+            # Заполнили телефон
+            async with db.execute("SELECT COUNT(*) FROM users WHERE phone IS NOT NULL AND phone != ''") as cursor:
+                stats['filled_phone'] = (await cursor.fetchone())[0]
+            
+            # Заполнили email
+            async with db.execute("SELECT COUNT(*) FROM users WHERE email IS NOT NULL AND email != ''") as cursor:
+                stats['filled_email'] = (await cursor.fetchone())[0]
+            
+            # Подтвердили email
+            async with db.execute("SELECT COUNT(*) FROM users WHERE email_confirmed = 1") as cursor:
+                stats['confirmed_email'] = (await cursor.fetchone())[0]
+            
+            # Получили промокод
+            async with db.execute("SELECT COUNT(*) FROM users WHERE promo_code IS NOT NULL AND promo_code != ''") as cursor:
+                stats['got_promo'] = (await cursor.fetchone())[0]
+            
+            return stats
+
+    async def get_users_by_city(self) -> dict:
+        """Получить статистику пользователей по городам"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("""
+                SELECT city, COUNT(*) as count 
+                FROM users 
+                WHERE city IS NOT NULL AND city != ''
+                GROUP BY city 
+                ORDER BY count DESC
+            """) as cursor:
+                rows = await cursor.fetchall()
+                return {row[0]: row[1] for row in rows}
+
+    async def get_users_by_project(self) -> dict:
+        """Получить статистику пользователей по проектам"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("""
+                SELECT project, COUNT(*) as count 
+                FROM users 
+                WHERE project IS NOT NULL AND project != ''
+                GROUP BY project 
+                ORDER BY count DESC
+            """) as cursor:
+                rows = await cursor.fetchall()
+                return {row[0]: row[1] for row in rows}
+
+    async def get_users_by_utm_source(self) -> dict:
+        """Получить статистику пользователей по UTM source"""
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("""
+                SELECT utm_source, COUNT(*) as count 
+                FROM users 
+                WHERE utm_source IS NOT NULL AND utm_source != ''
+                GROUP BY utm_source 
+                ORDER BY count DESC
+            """) as cursor:
+                rows = await cursor.fetchall()
+                return {row[0] or 'Не указан': row[1] for row in rows}
+
+    async def get_conversion_funnel(self) -> dict:
+        """Получить воронку конверсии"""
+        stats = await self.get_users_by_stage()
+        total = stats.get('total', 0)
+        
+        if total == 0:
+            return {}
+        
+        funnel = {
+            'total': total,
+            'started_questionnaire': {
+                'count': stats.get('started_questionnaire', 0),
+                'percentage': round((stats.get('started_questionnaire', 0) / total) * 100, 2) if total > 0 else 0
+            },
+            'filled_name': {
+                'count': stats.get('filled_name', 0),
+                'percentage': round((stats.get('filled_name', 0) / total) * 100, 2) if total > 0 else 0
+            },
+            'filled_gender': {
+                'count': stats.get('filled_gender', 0),
+                'percentage': round((stats.get('filled_gender', 0) / total) * 100, 2) if total > 0 else 0
+            },
+            'selected_genres': {
+                'count': stats.get('selected_genres', 0),
+                'percentage': round((stats.get('selected_genres', 0) / total) * 100, 2) if total > 0 else 0
+            },
+            'filled_scenario': {
+                'count': stats.get('filled_scenario', 0),
+                'percentage': round((stats.get('filled_scenario', 0) / total) * 100, 2) if total > 0 else 0
+            },
+            'filled_birthday': {
+                'count': stats.get('filled_birthday', 0),
+                'percentage': round((stats.get('filled_birthday', 0) / total) * 100, 2) if total > 0 else 0
+            },
+            'filled_phone': {
+                'count': stats.get('filled_phone', 0),
+                'percentage': round((stats.get('filled_phone', 0) / total) * 100, 2) if total > 0 else 0
+            },
+            'filled_email': {
+                'count': stats.get('filled_email', 0),
+                'percentage': round((stats.get('filled_email', 0) / total) * 100, 2) if total > 0 else 0
+            },
+            'confirmed_email': {
+                'count': stats.get('confirmed_email', 0),
+                'percentage': round((stats.get('confirmed_email', 0) / total) * 100, 2) if total > 0 else 0
+            },
+            'got_promo': {
+                'count': stats.get('got_promo', 0),
+                'percentage': round((stats.get('got_promo', 0) / total) * 100, 2) if total > 0 else 0
+            }
+        }
+        
+        return funnel
