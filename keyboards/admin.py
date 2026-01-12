@@ -90,6 +90,7 @@ def get_statistics_menu_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🏙️ По городам", callback_data="admin_stats_cities")],
         [InlineKeyboardButton(text="🎭 По проектам", callback_data="admin_stats_projects")],
         [InlineKeyboardButton(text="📊 По источникам (UTM)", callback_data="admin_stats_utm")],
+        [InlineKeyboardButton(text="📥 Экспорт в Excel", callback_data="admin_export_excel")],
         [InlineKeyboardButton(text="🔙 Назад в админ-панель", callback_data="admin_menu")]
     ])
 

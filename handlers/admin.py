@@ -1,9 +1,13 @@
 """Обработчики для админ-панели"""
+from io import BytesIO
+from datetime import datetime
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, BufferedInputFile
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill
 
 from database import Database
 from config import Config
@@ -841,4 +845,124 @@ async def admin_stats_utm_callback(callback: CallbackQuery, db: Database, config
     except Exception as e:
         logger.error(f"Ошибка при получении статистики по UTM: {e}", exc_info=True)
         await callback.answer("❌ Ошибка при получении статистики", show_alert=True)
+
+
+@router.callback_query(F.data == "admin_export_excel")
+async def admin_export_excel_callback(callback: CallbackQuery, db: Database, config: Config):
+    """Экспорт всех данных пользователей в Excel"""
+    user_id = callback.from_user.id
+    
+    if not is_admin(user_id, config):
+        await callback.answer("❌ Нет доступа", show_alert=True)
+        return
+    
+    logger.info(f"Администратор {user_id} запросил экспорт данных в Excel")
+    
+    try:
+        # Уведомляем пользователя о начале процесса
+        await callback.answer("⏳ Формирую Excel файл...")
+        
+        # Получаем всех пользователей
+        users = await db.get_all_users()
+        
+        if not users:
+            await callback.message.answer("❌ В базе данных нет пользователей для экспорта.")
+            return
+        
+        # Создаем Excel файл
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Пользователи"
+        
+        # Определяем заголовки
+        headers = [
+            "ID пользователя", "Username", "Имя", "Пол", "Город", "Проект", 
+            "Дата/время спектакля", "Промокод", "Телефон", "Email", 
+            "Email подтвержден", "День рождения", "Сценарий", "Жанры",
+            "Согласие на обработку", "Промокод выдан", "UTM Source", 
+            "UTM Medium", "UTM Campaign", "UTM Term", "UTM Content",
+            "Yandex ID", "Roistat Visit", "Создан", "Обновлен"
+        ]
+        
+        # Настройка стилей для заголовков
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF")
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        
+        # Записываем заголовки
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_num, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+        
+        # Записываем данные пользователей
+        for row_num, user in enumerate(users, 2):
+            ws.cell(row=row_num, column=1, value=user.get('user_id'))
+            ws.cell(row=row_num, column=2, value=user.get('username') or '')
+            ws.cell(row=row_num, column=3, value=user.get('name') or '')
+            ws.cell(row=row_num, column=4, value=user.get('gender') or '')
+            ws.cell(row=row_num, column=5, value=user.get('city') or '')
+            ws.cell(row=row_num, column=6, value=user.get('project') or '')
+            ws.cell(row=row_num, column=7, value=user.get('show_datetime') or '')
+            ws.cell(row=row_num, column=8, value=user.get('promo_code') or '')
+            ws.cell(row=row_num, column=9, value=user.get('phone') or '')
+            ws.cell(row=row_num, column=10, value=user.get('email') or '')
+            ws.cell(row=row_num, column=11, value='Да' if user.get('email_confirmed') else 'Нет')
+            ws.cell(row=row_num, column=12, value=user.get('birthday') or '')
+            ws.cell(row=row_num, column=13, value=user.get('scenario') or '')
+            ws.cell(row=row_num, column=14, value=user.get('genres', ''))
+            ws.cell(row=row_num, column=15, value='Да' if user.get('consent') else 'Нет')
+            ws.cell(row=row_num, column=16, value='Да' if user.get('promo_issued') else 'Нет')
+            ws.cell(row=row_num, column=17, value=user.get('utm_source') or '')
+            ws.cell(row=row_num, column=18, value=user.get('utm_medium') or '')
+            ws.cell(row=row_num, column=19, value=user.get('utm_campaign') or '')
+            ws.cell(row=row_num, column=20, value=user.get('utm_term') or '')
+            ws.cell(row=row_num, column=21, value=user.get('utm_content') or '')
+            ws.cell(row=row_num, column=22, value=user.get('yandex_id') or '')
+            ws.cell(row=row_num, column=23, value=user.get('roistat_visit') or '')
+            ws.cell(row=row_num, column=24, value=user.get('created_at') or '')
+            ws.cell(row=row_num, column=25, value=user.get('updated_at') or '')
+        
+        # Автоматическая ширина столбцов
+        for col_num in range(1, len(headers) + 1):
+            column_letter = ws.cell(row=1, column=col_num).column_letter
+            max_length = 0
+            for row in ws[column_letter]:
+                try:
+                    if len(str(row.value)) > max_length:
+                        max_length = len(str(row.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)  # Максимальная ширина 50
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Фиксируем первую строку (заголовки)
+        ws.freeze_panes = 'A2'
+        
+        # Сохраняем в BytesIO
+        excel_buffer = BytesIO()
+        wb.save(excel_buffer)
+        excel_buffer.seek(0)
+        
+        # Формируем имя файла с датой
+        filename = f"users_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        # Отправляем файл
+        file = BufferedInputFile(
+            file=excel_buffer.getvalue(),
+            filename=filename
+        )
+        
+        await callback.message.answer_document(
+            document=file,
+            caption=f"📊 Экспорт данных пользователей\n\nВсего записей: {len(users)}\nДата экспорта: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+        )
+        
+        logger.info(f"Администратор {user_id} успешно экспортировал {len(users)} пользователей в Excel")
+        
+    except Exception as e:
+        logger.error(f"Ошибка при экспорте в Excel: {e}", exc_info=True)
+        await callback.message.answer(f"❌ Ошибка при экспорте данных: {e}")
+        await callback.answer("❌ Ошибка при экспорте", show_alert=True)
 

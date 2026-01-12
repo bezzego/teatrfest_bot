@@ -453,3 +453,31 @@ class Database:
         }
         
         return funnel
+
+    async def get_all_users(self) -> List[dict]:
+        """Получить всех пользователей с их жанрами"""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            # Получаем всех пользователей
+            async with db.execute("SELECT * FROM users ORDER BY created_at DESC") as cursor:
+                rows = await cursor.fetchall()
+                users = [dict(row) for row in rows]
+            
+            # Получаем все жанры одним запросом
+            user_genres_dict = {}
+            async with db.execute("SELECT user_id, genre FROM user_genres") as cursor:
+                genre_rows = await cursor.fetchall()
+                for row in genre_rows:
+                    user_id = row[0]
+                    genre = row[1]
+                    if user_id not in user_genres_dict:
+                        user_genres_dict[user_id] = []
+                    user_genres_dict[user_id].append(genre)
+            
+            # Добавляем жанры к пользователям
+            for user in users:
+                user_id = user['user_id']
+                genres = user_genres_dict.get(user_id, [])
+                user['genres'] = ', '.join(genres) if genres else ''
+            
+            return users
